@@ -24,8 +24,8 @@ const routes = [
     { path: '/student/checkout', component: StudentCheckOut },*/
     // 教师路由
     { path: '/teacher/dashboard', component: TeacherDashboard },
-    /*{ path: '/teacher/course-attendance', component: CourseAttendance },
-    { path: '/teacher/manage-courses', component: ManageCourses },*/
+    { path: '/teacher/course-attendance', component: CourseAttendance },
+    { path: '/teacher/manage-courses', component: ManageCourses },
 ];
 
 const router = createRouter({
