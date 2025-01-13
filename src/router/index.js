@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Login from '../views/Login.vue';
+import Login from '../views/login.vue';
 import Register from '../views/Register.vue';
 
 // 学生界面
-import StudentDashboard from '../views/student/Dashboard.vue';
+import StudentDashboard from '../views/student/dashboard.vue';
 import StudentAttendance from '../views/student/Attendance.vue';
 import StudentCheckIn from '../views/student/CheckIn.vue';
 import StudentCheckOut from '../views/student/CheckOut.vue';

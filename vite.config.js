@@ -16,7 +16,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 8080, // 更换为 8080 或其他高端口
+    port: 5173, // 更换为 8080 或其他高端口
     host: '0.0.0.0', // 允许外部访问
   },
 })
