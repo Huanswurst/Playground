@@ -303,7 +303,9 @@ export default {
     width: 100%; /* 搜索框占满宽度 */
     margin-bottom: 10px; /* 搜索框和按钮之间的间距 */
   }
-
+ .el-progress {
+    min-width: 80px;
+ }
   .action-buttons {
     width: 100%; /* 按钮容器占满宽度 */
   }
