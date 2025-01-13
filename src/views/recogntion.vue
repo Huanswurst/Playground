@@ -144,7 +144,7 @@ export default {
   background-color: #409eff;
   color: white;
   text-align: center;
-  line-height: 60px;
+  line-height: 20px;
   font-size: 24px;
   font-weight: bold;
   padding: 0 20px;
