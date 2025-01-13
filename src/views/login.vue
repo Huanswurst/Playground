@@ -2,21 +2,22 @@
   <el-container class="login-container">
     <el-card class="login-card">
       <h2>登录</h2>
-      <el-form :model="loginForm" label-width="80px">
-        <el-form-item label="角色">
+      <el-form :model="loginForm" :rules="rules" ref="loginFormRef">
+        <el-form-item label="角色" prop="role">
           <el-radio-group v-model="loginForm.role">
             <el-radio label="student">学生</el-radio>
             <el-radio label="teacher">教师</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="用户名">
+        <el-form-item label="用户名" prop="username">
           <el-input v-model="loginForm.username" placeholder="请输入用户名" />
         </el-form-item>
-        <el-form-item label="密码">
+        <el-form-item label="密码" prop="password">
           <el-input
-              v-model="loginForm.password"
-              type="password"
-              placeholder="请输入密码"
+            v-model="loginForm.password"
+            type="password"
+            show-password
+            placeholder="请输入密码"
           />
         </el-form-item>
         <el-form-item>
@@ -33,20 +34,30 @@ export default {
   data() {
     return {
       loginForm: {
-        role: 'student', // 默认角色为学生
+        role: 'student',
         username: '',
         password: '',
+      },
+      rules: {
+        role: [{ required: true, message: '请选择角色', trigger: 'change' }],
+        username: [{ required: true, message: '用户名不能为空', trigger: 'blur' }],
+        password: [{ required: true, message: '密码不能为空', trigger: 'blur' }],
       },
     };
   },
   methods: {
     handleLogin() {
-      // 根据角色跳转到不同的首页
-      if (this.loginForm.role === 'student') {
-        this.$router.push('/student/dashboard');
-      } else {
-        this.$router.push('/teacher/dashboard');
-      }
+      this.$refs.loginFormRef.validate((valid) => {
+        if (valid) {
+          if (this.loginForm.role === 'student') {
+            this.$router.push('/student/dashboard');
+          } else {
+            this.$router.push('/teacher/dashboard');
+          }
+        } else {
+          console.log('表单验证失败');
+        }
+      });
     },
     goToRegister() {
       this.$router.push('/register');
@@ -65,5 +76,9 @@ export default {
 .login-card {
   width: 400px;
   padding: 20px;
+  transition: transform 0.3s ease;
+}
+.login-card:hover {
+  transform: translateY(-5px);
 }
 </style>
