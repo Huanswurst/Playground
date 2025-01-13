@@ -1,0 +1,129 @@
+/* 容器样式 */
+.dashboard-container {
+  height: 100vh; /* 确保容器占满整个视口高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 头部样式 */
+.dashboard-header {
+  background-color: #409eff;
+  color: white;
+  text-align: center;
+  line-height: 20px; /* 固定行高 */
+  font-size: 24px;
+  font-weight: bold;
+  padding: 0 20px; /* 添加内边距 */
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1); /* 添加阴影 */
+}
+
+/* 主体内容样式 */
+.el-main {
+  flex: 1; /* 让 main 部分占据剩余空间 */
+  padding: 20px;
+  background-color: #f5f7fa;
+}
+
+/* 统计卡片样式 */
+.stat-card {
+  text-align: center;
+  border-radius: 12px; /* 增加圆角 */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 10px; /* 移动端增加卡片间距 */
+  cursor: pointer; /* 添加手型光标 */
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); /* 悬停时增加阴影 */
+}
+
+.stat-value {
+  font-size: 24px; /* 移动端字体稍小 */
+  font-weight: bold;
+  color: #409eff;
+  margin: 10px 0;
+}
+
+.stat-description {
+  color: #909399;
+  font-size: 12px; /* 移动端字体稍小 */
+}
+
+/* 表格样式 */
+.attendance-table,
+.course-table {
+  margin-top: 20px;
+  border-radius: 12px; /* 增加圆角 */
+}
+
+.attendance-table h2,
+.course-table h2 {
+  margin-bottom: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #303133;
+}
+
+/* 搜索和操作按钮的布局 */
+.table-actions {
+  display: flex;
+  flex-wrap: wrap; /* 允许换行 */
+  gap: 10px; /* 按钮之间的间距 */
+  margin-bottom: 20px;
+}
+
+/* 搜索框样式 */
+.search-input {
+  flex: 1; /* 搜索框占据剩余空间 */
+  min-width: 150px; /* 最小宽度 */
+}
+
+/* 操作按钮容器 */
+.action-buttons {
+  display: flex;
+  gap: 10px; /* 按钮之间的间距 */
+}
+
+/* 移动端样式 */
+@media (max-width: 768px) {
+  .dashboard-container.mobile .el-main {
+    padding: 10px; /* 移动端减少内边距 */
+  }
+
+  .stat-card {
+    border-radius: 16px; /* 移动端卡片圆角更大 */
+    margin-bottom: 15px; /* 移动端卡片间距更大 */
+  }
+
+  .stat-value {
+    font-size: 22px; /* 移动端数据字体稍小 */
+  }
+
+  .stat-description {
+    font-size: 14px; /* 移动端描述字体稍大 */
+  }
+
+  .attendance-table,
+  .course-table {
+    margin-top: 10px;
+  }
+
+  /* 移动端表格操作按钮布局 */
+  .table-actions {
+    flex-direction: column; /* 垂直排列 */
+  }
+
+  .search-input {
+    width: 100%; /* 搜索框占满宽度 */
+    margin-bottom: 10px; /* 搜索框和按钮之间的间距 */
+  }
+
+  .action-buttons {
+    width: 100%; /* 按钮容器占满宽度 */
+  }
+
+  .action-buttons .el-button {
+    width: 100%; /* 按钮占满宽度 */
+  }
+}
