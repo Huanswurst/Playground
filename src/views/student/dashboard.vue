@@ -6,24 +6,36 @@
     <el-main>
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-card>
+          <el-card class="stat-card" shadow="hover">
             <h3>出勤率</h3>
-            <el-progress :percentage="attendanceRate" :color="attendanceRateColor" />
+            <el-progress
+              :percentage="attendanceRate"
+              :color="attendanceRateColor"
+              :stroke-width="16"
+            />
+            <p class="stat-description">当前出勤率为 {{ attendanceRate }}%</p>
           </el-card>
         </el-col>
         <el-col :span="8">
-          <el-card>
+          <el-card class="stat-card" shadow="hover">
             <h3>签到次数</h3>
-            <p>{{ checkInCount }} 次</p>
+            <p class="stat-value">{{ checkInCount }} 次</p>
+            <p class="stat-description">本学期累计签到次数</p>
           </el-card>
         </el-col>
       </el-row>
-      <el-card class="attendance-table">
+      <el-card class="attendance-table" shadow="hover">
         <h2>最近考勤记录</h2>
-        <el-table :data="recentAttendance">
-          <el-table-column prop="date" label="日期" />
-          <el-table-column prop="course" label="课程" />
-          <el-table-column prop="status" label="状态" />
+        <el-table :data="recentAttendance" stripe style="width: 100%">
+          <el-table-column prop="date" label="日期" width="180" />
+          <el-table-column prop="course" label="课程" width="180" />
+          <el-table-column prop="status" label="状态">
+            <template #default="{ row }">
+              <el-tag :type="getStatusTagType(row.status)">
+                {{ row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
         </el-table>
       </el-card>
     </el-main>
@@ -39,14 +51,30 @@ export default {
       recentAttendance: [
         { date: '2023-10-01', course: '数学', status: '正常' },
         { date: '2023-10-02', course: '英语', status: '迟到' },
+        { date: '2023-10-03', course: '物理', status: '缺勤' },
+        { date: '2023-10-04', course: '化学', status: '正常' },
       ],
     };
   },
   computed: {
     attendanceRateColor() {
-      if (this.attendanceRate >= 90) return '#67c23a';
-      if (this.attendanceRate >= 70) return '#e6a23c';
-      return '#f56c6c';
+      if (this.attendanceRate >= 90) return '#67c23a'; // 绿色
+      if (this.attendanceRate >= 70) return '#e6a23c'; // 橙色
+      return '#f56c6c'; // 红色
+    },
+  },
+  methods: {
+    getStatusTagType(status) {
+      switch (status) {
+        case '正常':
+          return 'success';
+        case '迟到':
+          return 'warning';
+        case '缺勤':
+          return 'danger';
+        default:
+          return 'info';
+      }
     },
   },
 };
@@ -55,14 +83,52 @@ export default {
 <style scoped>
 .dashboard-container {
   padding: 20px;
+  background-color: #f5f7fa;
 }
+
 .dashboard-header {
   background-color: #409eff;
   color: white;
   text-align: center;
   line-height: 60px;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
+
+.stat-card {
+  text-align: center;
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #409eff;
+  margin: 10px 0;
+}
+
+.stat-description {
+  color: #909399;
+  font-size: 14px;
+}
+
 .attendance-table {
   margin-top: 20px;
+  border-radius: 8px;
+}
+
+.el-progress {
+  margin: 20px 0;
+}
+
+.el-tag {
+  font-size: 14px;
 }
 </style>
