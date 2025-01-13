@@ -25,7 +25,12 @@ const routes = [
     // 教师路由
     { path: '/teacher/dashboard', component: TeacherDashboard },
     { path: '/teacher/course-attendance', component: CourseAttendance },
-    { path: '/teacher/manage-courses', component: ManageCourses },
+    {
+    path: '/teacher/courses/:courseId/attendance',
+    name: 'CourseAttendance',
+    component: CourseAttendance,
+    props: true, // 将路由参数作为 props 传递给组件
+  },
 ];
 
 const router = createRouter({
