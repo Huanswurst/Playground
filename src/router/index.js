@@ -10,9 +10,9 @@ import StudentCheckOut from '../views/student/CheckOut.vue';
 */
 // 教师界面
 import TeacherDashboard from '../views/teacher/dashboard.vue';
-/*import CourseAttendance from '../views/teacher/CourseAttendance.vue';
+import CourseAttendance from '../views/teacher/CourseAttendance.vue';
 import ManageCourses from '../views/teacher/ManageCourses.vue';
-*/
+
 const routes = [
     { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
