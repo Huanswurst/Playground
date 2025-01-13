@@ -49,8 +49,9 @@
           <el-table-column prop="courseName" label="课程名称" sortable />
           <el-table-column prop="teacherName" label="授课教师" sortable />
           <el-table-column prop="studentCount" label="学生人数" sortable />
-          <el-table-column label="操作">
+          <el-table-column label="操作" width="200">
             <template #default="{ row }">
+              <el-button type="primary" @click="handlePublishAttendance(row)">发布考勤</el-button>
               <el-button type="danger" @click="handleDeleteCourse(row)">删除</el-button>
             </template>
           </el-table-column>
@@ -70,21 +71,25 @@ export default {
       studentCount: 120,
       courses: [
         {
+          id: 1,
           courseName: '数学',
           teacherName: '张老师',
           studentCount: 50,
         },
         {
+          id: 2,
           courseName: '英语',
           teacherName: '李老师',
           studentCount: 45,
         },
         {
+          id: 3,
           courseName: '物理',
           teacherName: '王老师',
           studentCount: 40,
         },
         {
+          id: 4,
           courseName: '化学',
           teacherName: '赵老师',
           studentCount: 35,
@@ -134,6 +139,25 @@ export default {
     handleDeleteCourse(row) {
       this.courses = this.courses.filter((course) => course !== row);
       this.$message.success('删除课程成功');
+    },
+    // 处理发布考勤
+    handlePublishAttendance(row) {
+      this.$message.success(`已发布 ${row.courseName} 的考勤`);
+      // 这里可以调用 API 发布考勤
+      // 例如：this.publishAttendance(row.id);
+    },
+    // 发布考勤的 API 调用
+    async publishAttendance(courseId) {
+      try {
+        const response = await axios.post('/api/publish-attendance', { courseId });
+        if (response.data.success) {
+          this.$message.success('考勤发布成功');
+        } else {
+          this.$message.error('考勤发布失败');
+        }
+      } catch (error) {
+        this.$message.error('考勤发布失败');
+      }
     },
   },
 };
