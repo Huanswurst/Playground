@@ -1,124 +1,129 @@
 <template>
   <el-container class="attendance-container">
-    <!-- 头部 -->
-    <el-header class="attendance-header">
-      <!-- 折叠菜单按钮 -->
-      <el-icon class="menu-toggle" @click="isCollapse = !isCollapse">
-        <component :is="isCollapse ? 'Expand' : 'Fold'" />
-      </el-icon>
-
-      <!-- 菜单 -->
+    <!-- 侧边栏 -->
+    <el-aside
+      :width="isSidebarCollapsed ? '60px' : '200px'"
+      class="attendance-sidebar"
+    >
       <el-menu
-        class="header-menu"
-        mode="horizontal"
-        :collapse="isCollapse"
-        background-color="#409eff"
-        text-color="#fff"
-        active-text-color="#ffd04b"
+        :default-active="activeMenu"
+        class="el-menu-vertical-demo"
+        @select="handleMenuSelect"
       >
-        <el-menu-item index="1" @click="handleMenuClick('/dashboard')">
-          首页
+        <el-menu-item index="1">
+          <i class="el-icon-menu"></i>
+          <span class="menu-text" v-if="!isSidebarCollapsed">首页</span>
         </el-menu-item>
-        <el-menu-item index="2" @click="handleMenuClick('/attendance')">
-          考勤记录
+        <el-menu-item index="2">
+          <i class="el-icon-document"></i>
+          <span class="menu-text" v-if="!isSidebarCollapsed">考勤记录</span>
         </el-menu-item>
-        <el-menu-item index="3" @click="handleMenuClick('/profile')">
-          个人中心
-        </el-menu-item>
+        <!-- 添加更多菜单项根据需要 -->
       </el-menu>
+    </el-aside>
 
-      <!-- 标题 -->
-      <h1>我的考勤记录</h1>
-    </el-header>
+    <!-- 主体部分 -->
+    <el-container>
+      <el-header class="attendance-header">
+        <!-- Toggle Menu 按钮 -->
+        <el-button
+          type="text"
+          class="toggle-button"
+          @click="toggleSidebar"
+        >
+          <i :class="isSidebarCollapsed ? 'el-icon-s-unfold' : 'el-icon-s-fold'"></i>
+        </el-button>
+        <h1 class="header-title">我的考勤记录</h1>
+      </el-header>
 
-    <!-- 主体内容 -->
-    <el-main>
-      <!-- 筛选条件 -->
-      <el-form :inline="true" class="filter-form" :loading="loading">
-        <el-form-item label="日期范围">
-          <el-date-picker
-            v-model="filterDateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="yyyy-MM-dd"
-          />
-        </el-form-item>
-
-        <el-form-item label="课程">
-          <el-select v-model="filterCourse" placeholder="选择课程">
-            <el-option label="全部" value="" />
-            <el-option
-              v-for="course in courses"
-              :key="course.courseName"
-              :label="course.courseName"
-              :value="course.courseName"
+      <el-main>
+        <!-- 筛选条件 -->
+        <el-form :inline="true" class="filter-form" :loading="loading">
+          <el-form-item label="日期范围">
+            <el-date-picker
+              v-model="filterDateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="yyyy-MM-dd"
             />
-          </el-select>
-        </el-form-item>
+          </el-form-item>
 
-        <el-form-item label="状态">
-          <el-select v-model="filterStatus" placeholder="选择状态">
-            <el-option label="全部" value="" />
-            <el-option label="正常" value="正常" />
-            <el-option label="迟到" value="迟到" />
-            <el-option label="缺勤" value="缺勤" />
-          </el-select>
-        </el-form-item>
+          <el-form-item label="课程">
+            <el-select v-model="filterCourse" placeholder="选择课程">
+              <el-option label="全部" value="" />
+              <el-option
+                v-for="course in courses"
+                :key="course.courseName"
+                :label="course.courseName"
+                :value="course.courseName"
+              />
+            </el-select>
+          </el-form-item>
 
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button type="success" @click="handleExport">导出数据</el-button>
-        </el-form-item>
-      </el-form>
+          <el-form-item label="状态">
+            <el-select v-model="filterStatus" placeholder="选择状态">
+              <el-option label="全部" value="" />
+              <el-option label="正常" value="正常" />
+              <el-option label="迟到" value="迟到" />
+              <el-option label="缺勤" value="缺勤" />
+            </el-select>
+          </el-form-item>
 
-      <!-- 考勤表格 -->
-      <el-table
-        v-if="pagedAttendance.length > 0"
-        :data="pagedAttendance"
-        style="width: 100%"
-        border
-        :loading="loading"
-      >
-        <el-table-column
-          prop="date"
-          label="日期"
-          sortable
-          :formatter="formatDate"
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button type="success" @click="handleExport">导出数据</el-button>
+          </el-form-item>
+        </el-form>
+
+        <!-- 考勤表格 -->
+        <el-table
+          v-if="pagedAttendance.length > 0"
+          :data="pagedAttendance"
+          style="width: 100%"
+          border
+          :loading="loading"
+        >
+          <el-table-column
+            prop="date"
+            label="日期"
+            sortable
+            :formatter="formatDate"
+          />
+          <el-table-column prop="course" label="课程" sortable />
+          <el-table-column prop="status" label="状态" sortable>
+            <template #default="scope">
+              <el-tag :type="getStatusTagType(scope.row.status)">
+                {{ scope.row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="checkInTime" label="签到时间" sortable />
+          <el-table-column prop="checkOutTime" label="签退时间" sortable />
+        </el-table>
+
+        <!-- 空数据提示 -->
+        <div v-else class="no-data" v-if="!loading">
+          <p>没有符合条件的考勤记录。</p>
+        </div>
+
+        <!-- 加载指示器 -->
+        <el-loading v-if="loading" fullscreen :text="'加载中...'" />
+
+        <!-- 分页 -->
+        <el-pagination
+          class="pagination"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :total="filteredAttendance.length"
+          @current-change="handlePageChange"
+          layout="total, prev, pager, next"
+          background
+          v-if="filteredAttendance.length > pageSize"
         />
-        <el-table-column prop="course" label="课程" sortable />
-        <el-table-column prop="status" label="状态" sortable>
-          <template #default="scope">
-            <el-tag :type="getStatusTagType(scope.row.status)">
-              {{ scope.row.status }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="checkInTime" label="签到时间" sortable />
-        <el-table-column prop="checkOutTime" label="签退时间" sortable />
-      </el-table>
-
-      <!-- 空数据提示 -->
-      <div v-else class="no-data" v-if="!loading">
-        <p>没有符合条件的考勤记录。</p>
-      </div>
-
-      <!-- 加载指示器 -->
-      <el-loading v-if="loading" fullscreen :text="'加载中...'" />
-
-      <!-- 分页 -->
-      <el-pagination
-        class="pagination"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :total="filteredAttendance.length"
-        @current-change="handlePageChange"
-        layout="total, prev, pager, next"
-        background
-        v-if="filteredAttendance.length > pageSize"
-      />
-    </el-main>
+      </el-main>
+    </el-container>
   </el-container>
 </template>
 
@@ -126,13 +131,8 @@
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import axios from 'axios'; // 确保已安装 axios
-import { Expand, Fold } from '@element-plus/icons-vue'; // 引入图标
 
 export default {
-  components: {
-    Expand,
-    Fold,
-  },
   data() {
     return {
       filterDateRange: [], // 筛选日期范围
@@ -143,7 +143,8 @@ export default {
       courses: [], // 动态加载的课程列表
       attendanceData: [], // 全部考勤数据
       loading: false, // 加载状态
-      isCollapse: false, // 菜单是否折叠
+      isSidebarCollapsed: false, // 侧边栏状态
+      activeMenu: '2', // 当前激活的菜单项
     };
   },
   computed: {
@@ -276,7 +277,6 @@ export default {
             checkInTime: '-',
             checkOutTime: '-',
           },
-          // 添加更多模拟数据以测试分页
           {
             date: '2023-10-04',
             course: '化学',
@@ -284,7 +284,36 @@ export default {
             checkInTime: '08:05',
             checkOutTime: '12:00',
           },
-          // ... 可以继续添加
+          // 添加更多模拟数据以测试分页
+          {
+            date: '2023-10-05',
+            course: '数学',
+            status: '正常',
+            checkInTime: '08:00',
+            checkOutTime: '12:00',
+          },
+          {
+            date: '2023-10-06',
+            course: '英语',
+            status: '迟到',
+            checkInTime: '08:10',
+            checkOutTime: '12:00',
+          },
+          {
+            date: '2023-10-07',
+            course: '物理',
+            status: '缺勤',
+            checkInTime: '-',
+            checkOutTime: '-',
+          },
+          {
+            date: '2023-10-08',
+            course: '化学',
+            status: '正常',
+            checkInTime: '08:00',
+            checkOutTime: '12:00',
+          },
+          // 可以继续添加更多数据
         ];
       } catch (error) {
         this.$message.error('获取考勤数据失败');
@@ -292,9 +321,15 @@ export default {
         this.loading = false;
       }
     },
-    // 处理菜单点击事件
-    handleMenuClick(path) {
-      this.$router.push(path);
+    // 切换侧边栏显示状态
+    toggleSidebar() {
+      this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    },
+    // 处理菜单选择
+    handleMenuSelect(index) {
+      this.activeMenu = index;
+      // 根据选择的菜单项进行相应的导航或操作
+      this.$message(`你选择了菜单项 ${index}`);
     },
   },
   created() {
@@ -306,36 +341,29 @@ export default {
 
 <style scoped>
 .attendance-container {
-  padding: 20px;
+  height: 100vh; /* 使容器占满整个视口高度 */
+}
+
+.attendance-sidebar {
+  background-color: #f0f2f5;
+  transition: width 0.3s;
 }
 
 .attendance-header {
-  display: flex;
-  align-items: center;
   background-color: #409eff;
   color: white;
+  display: flex;
+  align-items: center;
   padding: 0 20px;
 }
 
-.menu-toggle {
-  font-size: 20px;
-  cursor: pointer;
+.toggle-button {
+  color: white;
   margin-right: 20px;
 }
 
-.header-menu {
-  flex: 1;
-  border-bottom: none;
-}
-
-.header-menu:not(.el-menu--collapse) {
-  width: auto;
-}
-
-h1 {
+.header-title {
   margin: 0;
-  margin-left: 20px;
-  line-height: 60px;
 }
 
 .filter-form {
