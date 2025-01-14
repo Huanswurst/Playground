@@ -135,7 +135,7 @@ export default {
       courses: [], // 动态加载的课程列表
       attendanceData: [], // 全部考勤数据
       loading: false, // 加载状态
-      isSidebarCollapsed: false, // 侧边栏状态
+      isSidebarCollapsed: true, // 侧边栏状态
       activeMenu: '2', // 当前激活的菜单项
     };
   },
