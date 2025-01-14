@@ -18,7 +18,7 @@
           <i class="el-icon-document"></i>
           <span class="menu-text" v-if="!isSidebarCollapsed">考勤记录</span>
         </el-menu-item>
-        <!-- 添加更多菜单项根据需要 -->
+        <!-- 根据需要添加更多菜单项 -->
       </el-menu>
     </el-aside>
 
@@ -30,15 +30,17 @@
           type="text"
           class="toggle-button"
           @click="toggleSidebar"
+          aria-label="Toggle menu"
         >
           <i :class="isSidebarCollapsed ? 'el-icon-s-unfold' : 'el-icon-s-fold'"></i>
         </el-button>
         <h1 class="header-title">我的考勤记录</h1>
       </el-header>
 
-      <el-main>
+      <!-- 使用 v-loading 指令绑定到 el-main -->
+      <el-main v-loading="loading">
         <!-- 筛选条件 -->
-        <el-form :inline="true" class="filter-form" :loading="loading">
+        <el-form :inline="true" class="filter-form">
           <el-form-item label="日期范围">
             <el-date-picker
               v-model="filterDateRange"
@@ -83,7 +85,6 @@
           :data="pagedAttendance"
           style="width: 100%"
           border
-          :loading="loading"
         >
           <el-table-column
             prop="date"
@@ -108,9 +109,6 @@
           <p>没有符合条件的考勤记录。</p>
         </div>
 
-        <!-- 加载指示器 -->
-        <el-loading v-if="loading" fullscreen :text="'加载中...'" />
-
         <!-- 分页 -->
         <el-pagination
           class="pagination"
@@ -131,6 +129,7 @@
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import axios from 'axios'; // 确保已安装 axios
+import { ElMessage } from 'element-plus'; // 用于消息提示
 
 export default {
   data() {
@@ -241,7 +240,7 @@ export default {
           { courseName: '化学' },
         ];
       } catch (error) {
-        this.$message.error('获取课程列表失败');
+        ElMessage.error('获取课程列表失败');
       } finally {
         this.loading = false;
       }
@@ -316,7 +315,7 @@ export default {
           // 可以继续添加更多数据
         ];
       } catch (error) {
-        this.$message.error('获取考勤数据失败');
+        ElMessage.error('获取考勤数据失败');
       } finally {
         this.loading = false;
       }
@@ -329,7 +328,7 @@ export default {
     handleMenuSelect(index) {
       this.activeMenu = index;
       // 根据选择的菜单项进行相应的导航或操作
-      this.$message(`你选择了菜单项 ${index}`);
+      ElMessage(`你选择了菜单项 ${index}`);
     },
   },
   created() {
