@@ -4,8 +4,8 @@ import Register from '../views/Register.vue';
 
 // 学生界面
 import StudentDashboard from '../views/student/dashboard.vue';
-/*import StudentAttendance from '../views/student/Attendance.vue';
-import StudentCheckIn from '../views/student/CheckIn.vue';
+import StudentAttendance from '../views/student/Attendance.vue';
+/*import StudentCheckIn from '../views/student/CheckIn.vue';
 import StudentCheckOut from '../views/student/CheckOut.vue';
 */
 // 教师界面
@@ -19,8 +19,8 @@ const routes = [
     { path: '/register', component: Register },
     // 学生路由
     { path: '/student/dashboard', component: StudentDashboard },
-    /*{ path: '/student/attendance', component: StudentAttendance },
-    { path: '/student/checkin', component: StudentCheckIn },
+    { path: '/student/attendance', component: StudentAttendance },
+    /*{ path: '/student/checkin', component: StudentCheckIn },
     { path: '/student/checkout', component: StudentCheckOut },*/
     // 教师路由
     { path: '/teacher/dashboard', component: TeacherDashboard },
