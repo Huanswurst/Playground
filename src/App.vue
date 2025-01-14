@@ -1,10 +1,49 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+import { ref } from 'vue'
+import { Menu as IconMenu, Setting } from '@element-plus/icons-vue'
+
+const isCollapse = ref(false)
+const handleOpen = (key, keyPath) => {
+  console.log(key, keyPath)
+}
+const handleClose = (key, keyPath) => {
+  console.log(key, keyPath)
+}
 </script>
 
 <template>
-    <router-view></router-view>
+  <el-container>
+    <el-aside :width="isCollapse ? '64px' : '200px'">
+      <el-menu
+        default-active="1"
+        class="el-menu-vertical-demo"
+        :collapse="isCollapse"
+        @open="handleOpen"
+        @close="handleClose"
+      >
+        <el-menu-item index="1">
+          <el-icon><icon-menu /></el-icon>
+          <template #title>导航一</template>
+        </el-menu-item>
+        <el-menu-item index="2">
+          <el-icon><setting /></el-icon>
+          <template #title>导航二</template>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
+    
+    <el-container>
+      <el-header style="text-align: right; font-size: 12px">
+        <el-button @click="isCollapse = !isCollapse">
+          {{ isCollapse ? '展开' : '收起' }}
+        </el-button>
+      </el-header>
+      
+      <el-main>
+        <router-view></router-view>
+      </el-main>
+    </el-container>
+  </el-container>
 </template>
 
 <style scoped>

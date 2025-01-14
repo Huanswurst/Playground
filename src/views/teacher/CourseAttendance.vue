@@ -1,9 +1,9 @@
 <template>
-  <el-container class="dashboard-container" :class="{ mobile: isMobile }">
-    <el-header class="dashboard-header">
+  <div class="dashboard-container" :class="{ mobile: isMobile }">
+    <div class="dashboard-header">
       <h1>{{ course.courseName }} 考勤详情</h1>
-    </el-header>
-    <el-main>
+    </div>
+    <div class="dashboard-content">
       <!-- 统计卡片 -->
       <el-row :gutter="isMobile ? 10 : 20">
         <el-col :span="isMobile ? 24 : 8">
@@ -68,8 +68,8 @@
           <el-table-column prop="lateCount" label="迟到人数" sortable />
         </el-table>
       </el-card>
-    </el-main>
-  </el-container>
+    </div>
+  </div>
 </template>
 
 <script>
