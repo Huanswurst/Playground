@@ -27,7 +27,7 @@
       <el-header class="attendance-header">
         <!-- Toggle Menu 按钮 -->
         <el-button
-          type="text"
+          type="link" <!-- 将 'text' 替换为 'link' -->
           class="toggle-button"
           @click="toggleSidebar"
           aria-label="Toggle menu"
