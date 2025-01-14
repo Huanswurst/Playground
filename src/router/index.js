@@ -4,7 +4,7 @@ import Register from '../views/Register.vue';
 
 // 学生界面
 import StudentDashboard from '../views/student/dashboard.vue';
-import StudentAttendance from '../views/student/Attendance.vue';
+import StudentAttendance from '../views/student/StudentAttendance.vue';
 /*import StudentCheckIn from '../views/student/CheckIn.vue';
 import StudentCheckOut from '../views/student/CheckOut.vue';
 */
