@@ -275,7 +275,7 @@ export default {
   background-color: #409eff;
   color: white;
   text-align: center;
-  line-height: 60px;
+  line-height: 20px;
 }
 
 .filter-form {
