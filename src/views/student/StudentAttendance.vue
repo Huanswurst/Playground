@@ -2,30 +2,24 @@
   <el-container class="attendance-container">
     <!-- 侧边栏 -->
     <el-aside
-      :width="isSidebarCollapsed ? '60px' : '200px'"
-      class="attendance-sidebar"
+      :class="{ 'attendance-sidebar': true, collapsed: isSidebarCollapsed }"
+      :style="{ width: isSidebarCollapsed ? '0' : '200px' }"
     >
-      <el-menu
-        :default-active="activeMenu"
-        class="el-menu-vertical-demo"
-        @select="handleMenuSelect"
-      >
+      <el-menu v-if="!isSidebarCollapsed">
         <el-menu-item index="1">
           <i class="el-icon-menu"></i>
-          <span class="menu-text" v-if="!isSidebarCollapsed">首页</span>
+          <span class="menu-text">首页</span>
         </el-menu-item>
         <el-menu-item index="2">
           <i class="el-icon-document"></i>
-          <span class="menu-text" v-if="!isSidebarCollapsed">考勤记录</span>
+          <span class="menu-text">考勤记录</span>
         </el-menu-item>
-        <!-- 根据需要添加更多菜单项 -->
       </el-menu>
     </el-aside>
 
     <!-- 主体部分 -->
     <el-container>
       <el-header class="attendance-header">
-        <!-- Toggle Menu 按钮 -->
         <el-button
           type="link"
           class="toggle-button"
@@ -37,7 +31,7 @@
         <h1 class="header-title">我的考勤记录</h1>
       </el-header>
 
-      <!-- 使用 v-loading 指令绑定到 el-main -->
+      <!-- 主体内容 -->
       <el-main v-loading="loading">
         <!-- 筛选条件 -->
         <el-form :inline="true" class="filter-form">
@@ -129,6 +123,7 @@ import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import axios from 'axios'; // 确保已安装 axios
 import { ElMessage } from 'element-plus'; // 用于消息提示
+
 export default {
   data() {
     return {
@@ -307,7 +302,6 @@ export default {
             checkInTime: '08:00',
             checkOutTime: '12:00',
           },
-          // 可以继续添加更多数据
         ];
       } catch (error) {
         ElMessage.error('获取考勤数据失败');
@@ -334,12 +328,20 @@ export default {
 </script>
 <style scoped>
 .attendance-container {
-  height: 100vh; /* 使容器占满整个视口高度 */
+  height: 100vh;
+  overflow: hidden; /* 防止内容溢出 */
 }
+
 .attendance-sidebar {
   background-color: #f0f2f5;
-  transition: width 0.3s;
+  transition: transform 0.3s ease, width 0.3s ease;
+  will-change: transform; /* 启用硬件加速 */
 }
+
+.attendance-sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
 .attendance-header {
   background-color: #409eff;
   color: white;
@@ -347,30 +349,37 @@ export default {
   align-items: center;
   padding: 0 20px;
 }
+
 .toggle-button {
   color: white;
   margin-right: 20px;
 }
+
 .header-title {
   margin: 0;
 }
+
 .filter-form {
   margin-bottom: 20px;
 }
+
 .pagination {
   margin-top: 20px;
   text-align: right;
 }
+
 .no-data {
   text-align: center;
   padding: 50px 0;
   color: #999;
 }
+
 .el-table th,
 .el-table td {
   word-wrap: break-word;
   white-space: normal;
 }
+
 @media (max-width: 768px) {
   .filter-form {
     flex-direction: column;
