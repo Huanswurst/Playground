@@ -1,4 +1,4 @@
-/* 容器样式 */
+
 .dashboard-container {
   height: 100vh; /* 确保容器占满整个视口高度 */
   display: flex;
@@ -50,15 +50,13 @@
   font-size: 12px; /* 移动端字体稍小 */
 }
 
-/* 表格样式 */
-.attendance-table,
-.course-table {
+/* 考勤表格样式 */
+.attendance-table {
   margin-top: 20px;
   border-radius: 12px; /* 增加圆角 */
 }
 
-.attendance-table h2,
-.course-table h2 {
+.attendance-table h2 {
   margin-bottom: 20px;
   font-size: 20px;
   font-weight: bold;
@@ -104,8 +102,7 @@
     font-size: 14px; /* 移动端描述字体稍大 */
   }
 
-  .attendance-table,
-  .course-table {
+  .attendance-table {
     margin-top: 10px;
   }
 
@@ -118,7 +115,9 @@
     width: 100%; /* 搜索框占满宽度 */
     margin-bottom: 10px; /* 搜索框和按钮之间的间距 */
   }
-
+ .el-progress {
+    min-width: 80px;
+ }
   .action-buttons {
     width: 100%; /* 按钮容器占满宽度 */
   }
