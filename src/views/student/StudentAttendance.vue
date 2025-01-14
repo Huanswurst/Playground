@@ -1,9 +1,37 @@
 <template>
   <el-container class="attendance-container">
+    <!-- 头部 -->
     <el-header class="attendance-header">
+      <!-- 折叠菜单按钮 -->
+      <el-icon class="menu-toggle" @click="isCollapse = !isCollapse">
+        <component :is="isCollapse ? 'Expand' : 'Fold'" />
+      </el-icon>
+
+      <!-- 菜单 -->
+      <el-menu
+        class="header-menu"
+        mode="horizontal"
+        :collapse="isCollapse"
+        background-color="#409eff"
+        text-color="#fff"
+        active-text-color="#ffd04b"
+      >
+        <el-menu-item index="1" @click="handleMenuClick('/dashboard')">
+          首页
+        </el-menu-item>
+        <el-menu-item index="2" @click="handleMenuClick('/attendance')">
+          考勤记录
+        </el-menu-item>
+        <el-menu-item index="3" @click="handleMenuClick('/profile')">
+          个人中心
+        </el-menu-item>
+      </el-menu>
+
+      <!-- 标题 -->
       <h1>我的考勤记录</h1>
     </el-header>
 
+    <!-- 主体内容 -->
     <el-main>
       <!-- 筛选条件 -->
       <el-form :inline="true" class="filter-form" :loading="loading">
@@ -97,9 +125,14 @@
 <script>
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
-import axios from 'axios'; // 确保已安装  axios
+import axios from 'axios'; // 确保已安装 axios
+import { Expand, Fold } from '@element-plus/icons-vue'; // 引入图标
 
 export default {
+  components: {
+    Expand,
+    Fold,
+  },
   data() {
     return {
       filterDateRange: [], // 筛选日期范围
@@ -110,6 +143,7 @@ export default {
       courses: [], // 动态加载的课程列表
       attendanceData: [], // 全部考勤数据
       loading: false, // 加载状态
+      isCollapse: false, // 菜单是否折叠
     };
   },
   computed: {
@@ -258,6 +292,10 @@ export default {
         this.loading = false;
       }
     },
+    // 处理菜单点击事件
+    handleMenuClick(path) {
+      this.$router.push(path);
+    },
   },
   created() {
     this.fetchCourses();
@@ -272,10 +310,32 @@ export default {
 }
 
 .attendance-header {
+  display: flex;
+  align-items: center;
   background-color: #409eff;
   color: white;
-  text-align: center;
-  line-height: 20px;
+  padding: 0 20px;
+}
+
+.menu-toggle {
+  font-size: 20px;
+  cursor: pointer;
+  margin-right: 20px;
+}
+
+.header-menu {
+  flex: 1;
+  border-bottom: none;
+}
+
+.header-menu:not(.el-menu--collapse) {
+  width: auto;
+}
+
+h1 {
+  margin: 0;
+  margin-left: 20px;
+  line-height: 60px;
 }
 
 .filter-form {
