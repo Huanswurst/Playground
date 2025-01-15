@@ -9,14 +9,45 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1">
-          <el-icon><icon-menu /></el-icon>
-          <span>考勤管理</span>
-        </el-menu-item>
-        <el-menu-item index="2">
-          <el-icon><setting /></el-icon>
-          <span>课程管理</span>
-        </el-menu-item>
+        <el-sub-menu index="1">
+          <template #title>
+            <el-icon><calendar /></el-icon>
+            <span>考勤管理</span>
+          </template>
+          <el-menu-item index="1-1" route="/teacher/attendance">考勤记录</el-menu-item>
+          <el-menu-item index="1-2" route="/teacher/attendance/statistics">考勤统计</el-menu-item>
+          <el-menu-item index="1-3" route="/teacher/attendance/settings">考勤设置</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="2">
+          <template #title>
+            <el-icon><notebook /></el-icon>
+            <span>课程管理</span>
+          </template>
+          <el-menu-item index="2-1" route="/teacher/course/schedule">课程安排</el-menu-item>
+          <el-menu-item index="2-2" route="/teacher/course/materials">教学资料</el-menu-item>
+          <el-menu-item index="2-3" route="/teacher/course/assignments">作业管理</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="3">
+          <template #title>
+            <el-icon><user /></el-icon>
+            <span>学生管理</span>
+          </template>
+          <el-menu-item index="3-1" route="/teacher/student/list">学生列表</el-menu-item>
+          <el-menu-item index="3-2" route="/teacher/student/performance">学生表现</el-menu-item>
+          <el-menu-item index="3-3" route="/teacher/student/communication">沟通记录</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="4">
+          <template #title>
+            <el-icon><data-line /></el-icon>
+            <span>成绩管理</span>
+          </template>
+          <el-menu-item index="4-1" route="/teacher/grade/input">成绩录入</el-menu-item>
+          <el-menu-item index="4-2" route="/teacher/grade/analysis">成绩分析</el-menu-item>
+          <el-menu-item index="4-3" route="/teacher/grade/report">成绩报告</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     

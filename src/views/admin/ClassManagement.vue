@@ -9,22 +9,65 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1" @click="$router.push('/admin/class')">
-          <el-icon><icon-menu /></el-icon>
-          <span>班级列表</span>
-        </el-menu-item>
-        <el-menu-item index="2" @click="$router.push('/admin/class/students')">
-          <el-icon><user /></el-icon>
-          <span>学生管理</span>
-        </el-menu-item>
-        <el-menu-item index="3" @click="$router.push('/admin/class/teachers')">
-          <el-icon><avatar /></el-icon>
-          <span>教师分配</span>
-        </el-menu-item>
-        <el-menu-item index="4" @click="$router.push('/admin/class/schedule')">
-          <el-icon><calendar /></el-icon>
-          <span>课程安排</span>
-        </el-menu-item>
+        <el-sub-menu index="1">
+          <template #title>
+            <el-icon><calendar /></el-icon>
+            <span>考勤管理</span>
+          </template>
+          <el-menu-item index="1-1" route="/admin/attendance">考勤记录</el-menu-item>
+          <el-menu-item index="1-2" route="/admin/attendance/statistics">考勤统计</el-menu-item>
+          <el-menu-item index="1-3" route="/admin/attendance/settings">考勤设置</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="2">
+          <template #title>
+            <el-icon><lock /></el-icon>
+            <span>权限管理</span>
+          </template>
+          <el-menu-item index="2-1" route="/admin/permission/roles">角色管理</el-menu-item>
+          <el-menu-item index="2-2" route="/admin/permission/users">用户权限</el-menu-item>
+          <el-menu-item index="2-3" route="/admin/permission/audit">权限审计</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="3">
+          <template #title>
+            <el-icon><document /></el-icon>
+            <span>日志管理</span>
+          </template>
+          <el-menu-item index="3-1" route="/admin/log/login">登录日志</el-menu-item>
+          <el-menu-item index="3-2" route="/admin/log/operation">操作日志</el-menu-item>
+          <el-menu-item index="3-3" route="/admin/log/error">错误日志</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="4">
+          <template #title>
+            <el-icon><data-line /></el-icon>
+            <span>数据统计</span>
+          </template>
+          <el-menu-item index="4-1" route="/admin/statistics/attendance">考勤统计</el-menu-item>
+          <el-menu-item index="4-2" route="/admin/statistics/course">课程统计</el-menu-item>
+          <el-menu-item index="4-3" route="/admin/statistics/user">用户统计</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="5">
+          <template #title>
+            <el-icon><notebook /></el-icon>
+            <span>课程管理</span>
+          </template>
+          <el-menu-item index="5-1" route="/admin/course/schedule">课程安排</el-menu-item>
+          <el-menu-item index="5-2" route="/admin/course/teacher">教师分配</el-menu-item>
+          <el-menu-item index="5-3" route="/admin/course/student">学生选课</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="6">
+          <template #title>
+            <el-icon><school /></el-icon>
+            <span>班级管理</span>
+          </template>
+          <el-menu-item index="6-1" route="/admin/class/student">学生管理</el-menu-item>
+          <el-menu-item index="6-2" route="/admin/class/teacher">教师管理</el-menu-item>
+          <el-menu-item index="6-3" route="/admin/class/schedule">课表管理</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     

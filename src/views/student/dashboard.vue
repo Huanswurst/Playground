@@ -9,14 +9,45 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1">
-          <el-icon><icon-menu /></el-icon>
-          <span>考勤记录</span>
-        </el-menu-item>
-        <el-menu-item index="2">
-          <el-icon><setting /></el-icon>
-          <span>课程信息</span>
-        </el-menu-item>
+        <el-sub-menu index="1">
+          <template #title>
+            <el-icon><calendar /></el-icon>
+            <span>考勤管理</span>
+          </template>
+          <el-menu-item index="1-1" route="/student/attendance">考勤记录</el-menu-item>
+          <el-menu-item index="1-2" route="/student/attendance/statistics">考勤统计</el-menu-item>
+          <el-menu-item index="1-3" route="/student/attendance/apply">考勤申诉</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="2">
+          <template #title>
+            <el-icon><notebook /></el-icon>
+            <span>课程信息</span>
+          </template>
+          <el-menu-item index="2-1" route="/student/course/schedule">课程表</el-menu-item>
+          <el-menu-item index="2-2" route="/student/course/materials">课程资料</el-menu-item>
+          <el-menu-item index="2-3" route="/student/course/assignments">作业提交</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="3">
+          <template #title>
+            <el-icon><data-line /></el-icon>
+            <span>成绩查询</span>
+          </template>
+          <el-menu-item index="3-1" route="/student/grade/current">本学期成绩</el-menu-item>
+          <el-menu-item index="3-2" route="/student/grade/history">历史成绩</el-menu-item>
+          <el-menu-item index="3-3" route="/student/grade/analysis">成绩分析</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="4">
+          <template #title>
+            <el-icon><user /></el-icon>
+            <span>个人中心</span>
+          </template>
+          <el-menu-item index="4-1" route="/student/profile">个人信息</el-menu-item>
+          <el-menu-item index="4-2" route="/student/password">修改密码</el-menu-item>
+          <el-menu-item index="4-3" route="/student/notification">消息通知</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     

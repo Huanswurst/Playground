@@ -9,19 +9,19 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1" @click="$router.push('/admin/attendance')">
+        <el-menu-item index="1" route="/admin/attendance">
           <el-icon><icon-menu /></el-icon>
           <span>考勤记录</span>
         </el-menu-item>
-        <el-menu-item index="2" @click="$router.push('/admin/attendance/report')">
+        <el-menu-item index="2" route="/admin/statistics">
           <el-icon><document /></el-icon>
           <span>考勤报表</span>
         </el-menu-item>
-        <el-menu-item index="3" @click="$router.push('/admin/attendance/setting')">
+        <el-menu-item index="3" route="/admin/permission">
           <el-icon><setting /></el-icon>
           <span>考勤设置</span>
         </el-menu-item>
-        <el-menu-item index="4" @click="$router.push('/admin/attendance/exception')">
+        <el-menu-item index="4" route="/admin/log">
           <el-icon><warning /></el-icon>
           <span>异常处理</span>
         </el-menu-item>
