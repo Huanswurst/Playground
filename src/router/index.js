@@ -13,6 +13,14 @@ import TeacherDashboard from '../views/teacher/dashboard.vue';
 import CourseAttendance from '../views/teacher/CourseAttendance.vue';
 import ManageCourses from '../views/teacher/ManageCourses.vue';
 
+// 管理员界面
+import AttendanceManagement from '../views/admin/AttendanceManagement.vue';
+import ClassManagement from '../views/admin/ClassManagement.vue';
+import CourseManagement from '../views/admin/CourseManagement.vue';
+import DataStatistics from '../views/admin/DataStatistics.vue';
+import LogManagement from '../views/admin/LogManagement.vue';
+import PermissionManagement from '../views/admin/PermissionManagement.vue';
+
 const routes = [
     { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
@@ -25,12 +33,19 @@ const routes = [
     // 教师路由
     { path: '/teacher/dashboard', component: TeacherDashboard },
     { path: '/teacher/course-attendance', component: CourseAttendance },
-    {
+  {
     path: '/teacher/courses/:courseId/attendance',
     name: 'CourseAttendance',
     component: CourseAttendance,
     props: true, // 将路由参数作为 props 传递给组件
   },
+  // 管理员路由
+  { path: '/admin/attendance', component: AttendanceManagement },
+  { path: '/admin/class', component: ClassManagement },
+  { path: '/admin/course', component: CourseManagement },
+  { path: '/admin/statistics', component: DataStatistics },
+  { path: '/admin/log', component: LogManagement },
+  { path: '/admin/permission', component: PermissionManagement },
 ];
 
 const router = createRouter({
