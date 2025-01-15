@@ -9,13 +9,25 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1">
+        <el-menu-item index="1" @click="$router.push('/admin/statistics')">
           <el-icon><icon-menu /></el-icon>
-          <span>数据统计</span>
+          <span>数据概览</span>
         </el-menu-item>
-        <el-menu-item index="2">
-          <el-icon><setting /></el-icon>
-          <span>报表管理</span>
+        <el-menu-item index="2" @click="$router.push('/admin/statistics/attendance')">
+          <el-icon><data-line /></el-icon>
+          <span>考勤统计</span>
+        </el-menu-item>
+        <el-menu-item index="3" @click="$router.push('/admin/statistics/performance')">
+          <el-icon><trend-charts /></el-icon>
+          <span>成绩分析</span>
+        </el-menu-item>
+        <el-menu-item index="4" @click="$router.push('/admin/statistics/teacher')">
+          <el-icon><user /></el-icon>
+          <span>教师绩效</span>
+        </el-menu-item>
+        <el-menu-item index="5" @click="$router.push('/admin/statistics/student')">
+          <el-icon><avatar /></el-icon>
+          <span>学生表现</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -66,7 +78,7 @@
 </template>
 
 <script setup>
-import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
+import { Menu as IconMenu, Setting, Expand, Fold, DataLine, TrendCharts, User, Avatar } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 

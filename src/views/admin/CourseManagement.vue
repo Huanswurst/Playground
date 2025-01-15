@@ -9,13 +9,25 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1">
+        <el-menu-item index="1" @click="$router.push('/admin/course')">
           <el-icon><icon-menu /></el-icon>
-          <span>课程管理</span>
+          <span>课程列表</span>
         </el-menu-item>
-        <el-menu-item index="2">
-          <el-icon><setting /></el-icon>
-          <span>班级管理</span>
+        <el-menu-item index="2" @click="$router.push('/admin/course/add')">
+          <el-icon><plus /></el-icon>
+          <span>添加课程</span>
+        </el-menu-item>
+        <el-menu-item index="3" @click="$router.push('/admin/course/category')">
+          <el-icon><folder /></el-icon>
+          <span>课程分类</span>
+        </el-menu-item>
+        <el-menu-item index="4" @click="$router.push('/admin/course/teacher')">
+          <el-icon><avatar /></el-icon>
+          <span>教师分配</span>
+        </el-menu-item>
+        <el-menu-item index="5" @click="$router.push('/admin/course/material')">
+          <el-icon><document /></el-icon>
+          <span>课程资料</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -116,7 +128,7 @@
 </template>
 
 <script setup>
-import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
+import { Menu as IconMenu, Setting, Expand, Fold, Plus, Folder, Avatar, Document } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
 

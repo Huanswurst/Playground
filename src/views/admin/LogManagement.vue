@@ -9,13 +9,25 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1">
+        <el-menu-item index="1" @click="$router.push('/admin/log')">
           <el-icon><icon-menu /></el-icon>
-          <span>日志管理</span>
+          <span>日志查询</span>
         </el-menu-item>
-        <el-menu-item index="2">
-          <el-icon><setting /></el-icon>
-          <span>系统监控</span>
+        <el-menu-item index="2" @click="$router.push('/admin/log/login')">
+          <el-icon><user /></el-icon>
+          <span>登录日志</span>
+        </el-menu-item>
+        <el-menu-item index="3" @click="$router.push('/admin/log/operation')">
+          <el-icon><operation /></el-icon>
+          <span>操作日志</span>
+        </el-menu-item>
+        <el-menu-item index="4" @click="$router.push('/admin/log/error')">
+          <el-icon><warning /></el-icon>
+          <span>错误日志</span>
+        </el-menu-item>
+        <el-menu-item index="5" @click="$router.push('/admin/log/export')">
+          <el-icon><download /></el-icon>
+          <span>日志导出</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -86,7 +98,7 @@
 </template>
 
 <script setup>
-import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
+import { Menu as IconMenu, Setting, Expand, Fold, User, Operation, Warning, Download } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 
 const isSidebarCollapsed = ref(false)

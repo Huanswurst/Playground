@@ -9,13 +9,21 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1">
+        <el-menu-item index="1" @click="$router.push('/admin/class')">
           <el-icon><icon-menu /></el-icon>
-          <span>班级管理</span>
+          <span>班级列表</span>
         </el-menu-item>
-        <el-menu-item index="2">
-          <el-icon><setting /></el-icon>
-          <span>课程管理</span>
+        <el-menu-item index="2" @click="$router.push('/admin/class/students')">
+          <el-icon><user /></el-icon>
+          <span>学生管理</span>
+        </el-menu-item>
+        <el-menu-item index="3" @click="$router.push('/admin/class/teachers')">
+          <el-icon><avatar /></el-icon>
+          <span>教师分配</span>
+        </el-menu-item>
+        <el-menu-item index="4" @click="$router.push('/admin/class/schedule')">
+          <el-icon><calendar /></el-icon>
+          <span>课程安排</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -116,7 +124,7 @@
 </template>
 
 <script setup>
-import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
+import { Menu as IconMenu, Setting, Expand, Fold, User, Avatar, Calendar } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
 

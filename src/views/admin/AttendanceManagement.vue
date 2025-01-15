@@ -9,13 +9,21 @@
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
       >
-        <el-menu-item index="1">
+        <el-menu-item index="1" @click="$router.push('/admin/attendance')">
           <el-icon><icon-menu /></el-icon>
-          <span>考勤管理</span>
+          <span>考勤记录</span>
         </el-menu-item>
-        <el-menu-item index="2">
+        <el-menu-item index="2" @click="$router.push('/admin/attendance/report')">
+          <el-icon><document /></el-icon>
+          <span>考勤报表</span>
+        </el-menu-item>
+        <el-menu-item index="3" @click="$router.push('/admin/attendance/setting')">
           <el-icon><setting /></el-icon>
-          <span>用户管理</span>
+          <span>考勤设置</span>
+        </el-menu-item>
+        <el-menu-item index="4" @click="$router.push('/admin/attendance/exception')">
+          <el-icon><warning /></el-icon>
+          <span>异常处理</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -90,7 +98,7 @@
 </template>
 
 <script setup>
-import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
+import { Menu as IconMenu, Setting, Expand, Fold, Document, Warning } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 
 const isSidebarCollapsed = ref(false)
