@@ -25,6 +25,7 @@
           <el-button type="primary" @click="handleLogin">登录</el-button>
           <el-button @click="goToRegister">注册</el-button>
           <el-button v-if="token" type="danger" @click="logout">登出</el-button>
+          <el-button type="info" @click="testApiConnection">测试API连接</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -107,6 +108,27 @@ export default {
     goToRegister() {
       this.$router.push('/register');
     },
+    async testApiConnection() {
+      try {
+        const response = await fetch('http://localhost:8000/api/test/', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API连接失败: ${response.status} ${errorText}`);
+        }
+        
+        const data = await response.json();
+        this.$message.success(`API连接成功: ${data.message}`);
+      } catch (error) {
+        console.error('API连接错误详情:', error);
+        this.$message.error(error.message);
+      }
+    }
   },
   created() {
     this.checkLoginStatus();
