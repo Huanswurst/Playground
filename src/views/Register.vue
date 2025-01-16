@@ -5,8 +5,9 @@
       <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="100px">
         <el-form-item label="角色" prop="role">
           <el-radio-group v-model="registerForm.role">
-            <el-radio value="teacher">教师</el-radio>
-            <el-radio value="student">学生</el-radio>
+          <el-radio value="teacher">教师</el-radio>
+          <el-radio value="student">学生</el-radio>
+          <el-radio value="admin">管理员</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="用户名" prop="username">
@@ -81,10 +82,13 @@ export default {
           // 根据角色决定跳转逻辑
           if (this.registerForm.role === 'teacher') {
             this.$message.success('教师注册成功！');
-            this.$router.push('/login'); // 教师直接跳转到登录页面
+            this.$router.push('/login');
           } else if (this.registerForm.role === 'student') {
             this.$message.success('学生注册成功，请进行人脸识别！');
-            this.$router.push('/face-recognition'); // 学生跳转到人脸识别页面
+            this.$router.push('/face-recognition');
+          } else if (this.registerForm.role === 'admin') {
+            this.$message.success('管理员注册成功！');
+            this.$router.push('/login');
           }
         } else {
           this.$message.error('请检查表单填写是否正确');

@@ -7,6 +7,7 @@
           <el-radio-group v-model="loginForm.role">
             <el-radio label="student">学生</el-radio>
             <el-radio label="teacher">教师</el-radio>
+            <el-radio label="admin">管理员</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="用户名" prop="username">
@@ -23,6 +24,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleLogin">登录</el-button>
           <el-button @click="goToRegister">注册</el-button>
+          <el-button v-if="token" type="danger" @click="logout">登出</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -43,15 +45,36 @@ export default {
         username: [{ required: true, message: '用户名不能为空', trigger: 'blur' }],
         password: [{ required: true, message: '密码不能为空', trigger: 'blur' }],
       },
+      token: null,
+      expires: null,
     };
   },
   methods: {
     handleLogin() {
       this.$refs.loginFormRef.validate((valid) => {
         if (valid) {
+          // 如果是管理员角色，直接跳转不保存session
+          if (this.loginForm.role === 'admin') {
+            this.$router.push('/admin/dashboard');
+            return;
+          }
+
+          // 学生和教师保存session
+          const token = 'mock-token-' + Date.now();
+          const expires = Date.now() + 259200000; // 3天有效期
+          
+          // 保存到localStorage
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('authExpires', expires);
+          localStorage.setItem('authRole', this.loginForm.role);
+          
+          // 更新组件状态
+          this.token = token;
+          this.expires = expires;
+
           if (this.loginForm.role === 'student') {
             this.$router.push('/student/dashboard');
-          } else {
+          } else if (this.loginForm.role === 'teacher') {
             this.$router.push('/teacher/dashboard');
           }
         } else {
@@ -59,9 +82,34 @@ export default {
         }
       });
     },
+    checkLoginStatus() {
+      const token = localStorage.getItem('authToken');
+      const expires = localStorage.getItem('authExpires');
+      
+      if (token && expires && Date.now() < Number(expires)) {
+        this.token = token;
+        this.expires = Number(expires);
+        // 根据角色跳转到对应页面
+        const role = localStorage.getItem('authRole') || 'student';
+        if (role !== 'admin') {
+          this.$router.push(`/${role}/dashboard`);
+        }
+      }
+    },
+    logout() {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authExpires');
+      localStorage.removeItem('authRole');
+      this.token = null;
+      this.expires = null;
+      this.$router.push('/login');
+    },
     goToRegister() {
       this.$router.push('/register');
     },
+  },
+  created() {
+    this.checkLoginStatus();
   },
 };
 </script>
