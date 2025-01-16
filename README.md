@@ -6,8 +6,8 @@
 ## 技术栈
 - 前端：Vue 3 + Element Plus + Vite
 - 后端：Django 5 + Django REST Framework
-- 数据库：SQLite3
-- 部署：Nginx + Gunicorn
+- 数据库：PostgreSQL
+- 部署：Nginx 
 
 ## 环境要求
 - Node.js >= 16.0.0
