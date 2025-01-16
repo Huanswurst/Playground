@@ -33,6 +33,7 @@
 </template>
 
 <script>
+import config from '../config';
 export default {
   data() {
     return {
@@ -51,32 +52,41 @@ export default {
     };
   },
   methods: {
-    handleLogin() {
-      this.$refs.loginFormRef.validate((valid) => {
+    async handleLogin() {
+      this.$refs.loginFormRef.validate(async (valid) => {
         if (valid) {
-          // 如果是管理员角色，直接跳转不保存session
-          if (this.loginForm.role === 'admin') {
-            this.$router.push('/admin/dashboard');
-            return;
-          }
+          try {
+            const response = await fetch(`${config.API_BASE_URL}auth/login/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                username: this.loginForm.username,
+                password: this.loginForm.password
+              })
+            });
 
-          // 学生和教师保存session
-          const token = 'mock-token-' + Date.now();
-          const expires = Date.now() + 259200000; // 3天有效期
-          
-          // 保存到localStorage
-          localStorage.setItem('authToken', token);
-          localStorage.setItem('authExpires', expires);
-          localStorage.setItem('authRole', this.loginForm.role);
-          
-          // 更新组件状态
-          this.token = token;
-          this.expires = expires;
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.detail || '登录失败');
+            }
 
-          if (this.loginForm.role === 'student') {
-            this.$router.push('/student/dashboard');
-          } else if (this.loginForm.role === 'teacher') {
-            this.$router.push('/teacher/dashboard');
+            const data = await response.json();
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('authRole', this.loginForm.role);
+            
+            this.token = data.token;
+            
+            if (this.loginForm.role === 'admin') {
+              this.$router.push('/admin/dashboard');
+            } else if (this.loginForm.role === 'student') {
+              this.$router.push('/student/dashboard');
+            } else if (this.loginForm.role === 'teacher') {
+              this.$router.push('/teacher/dashboard');
+            }
+          } catch (error) {
+            this.$message.error(error.message);
           }
         } else {
           console.log('表单验证失败');
