@@ -110,7 +110,7 @@ export default {
     },
     async testApiConnection() {
       try {
-        const response = await fetch('https://didactic-space-yodel-4476x6qw6wp27g6q-8000.app.github.dev/api/test/', {
+        const response = await fetch('http://8.153.106.1:8000/api/test/', {
           headers: {
             'Content-Type': 'application/json',
           },
