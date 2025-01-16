@@ -39,6 +39,8 @@
 </template>
 
 <script>
+import config from '@/config';
+
 export default {
   data() {
     // 自定义密码一致性验证规则
@@ -76,19 +78,37 @@ export default {
   },
   methods: {
     // 处理注册逻辑
-    handleRegister() {
-      this.$refs.registerFormRef.validate((valid) => {
+    async handleRegister() {
+      this.$refs.registerFormRef.validate(async (valid) => {
         if (valid) {
-          // 根据角色决定跳转逻辑
-          if (this.registerForm.role === 'teacher') {
-            this.$message.success('教师注册成功！');
-            this.$router.push('/login');
-          } else if (this.registerForm.role === 'student') {
-            this.$message.success('学生注册成功，请进行人脸识别！');
-            this.$router.push('/face-recognition');
-          } else if (this.registerForm.role === 'admin') {
-            this.$message.success('管理员注册成功！');
-            this.$router.push('/login');
+          try {
+            const response = await fetch(`${config.API_BASE_URL}auth/register/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                username: this.registerForm.username,
+                password: this.registerForm.password,
+                role: this.registerForm.role
+              })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.detail || '注册失败');
+            }
+
+            const data = await response.json();
+            this.$message.success('注册成功！');
+            
+            if (this.registerForm.role === 'student') {
+              this.$router.push('/face-recognition');
+            } else {
+              this.$router.push('/login');
+            }
+          } catch (error) {
+            this.$message.error(error.message);
           }
         } else {
           this.$message.error('请检查表单填写是否正确');
