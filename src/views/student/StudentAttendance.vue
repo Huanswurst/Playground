@@ -72,6 +72,14 @@
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button type="success" @click="handleExport">导出数据</el-button>
+            <el-button type="info" @click="handleSwitchCamera">
+              <el-icon><switch /></el-icon>
+              <span>切换摄像头</span>
+            </el-button>
+            <el-button type="warning" @click="handleStartRecognition">
+              <el-icon><camera /></el-icon>
+              <span>开始识别</span>
+            </el-button>
           </el-form-item>
         </el-form>
 
@@ -316,6 +324,18 @@ export default {
       // 根据选择的菜单项进行相应的导航或操作
       ElMessage(`你选择了菜单项 ${index}`);
     },
+
+    // 切换摄像头
+    handleSwitchCamera() {
+      ElMessage('正在切换摄像头...');
+      // TODO: 实现摄像头切换逻辑
+    },
+
+    // 开始人脸识别
+    handleStartRecognition() {
+      ElMessage('正在启动人脸识别...');
+      // TODO: 实现人脸识别逻辑
+    },
   },
   created() {
     this.fetchCourses();
@@ -330,7 +350,7 @@ import axios from 'axios'; // 确保已安装 axios
 import { ElMessage } from 'element-plus'; // 用于消息提示
 import { ref, computed } from 'vue';
 import { Expand, Fold, Menu, Document } from '@element-plus/icons-vue';
-import { Calendar, Notebook, DataLine, User } from '@element-plus/icons-vue';
+import { Calendar, Notebook, DataLine, User, Switch, Camera } from '@element-plus/icons-vue';
 </script>
 <style scoped>
 .attendance-container {

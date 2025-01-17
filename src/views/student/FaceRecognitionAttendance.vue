@@ -3,7 +3,8 @@
     <el-header class="dashboard-header">
       <div class="header-content">
         <el-button type="primary" @click="$router.push('/student/attendance')" class="back-button">
-          返回考勤
+          <el-icon><Calendar /></el-icon>
+          <span>返回考勤</span>
         </el-button>
         <h1 class="header-title">人脸识别考勤</h1>
       </div>
@@ -16,7 +17,7 @@
           <canvas ref="canvas" style="display: none;"></canvas>
           <div class="camera-controls">
             <el-button type="primary" @click="switchCamera" class="control-button">
-              <el-icon><switch /></el-icon>
+              <el-icon><Switch /></el-icon>
               <span>切换摄像头</span>
             </el-button>
             <el-button type="success" @click="startRecognition" class="control-button">
