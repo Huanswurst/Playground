@@ -148,7 +148,9 @@ onBeforeUnmount(() => {
   .dashboard-header {
     padding: 0 10px;
   }
-  
+  .el-button + .el-button {
+  margin-left: 0 !important;
+}
   .header-title {
     font-size: 18px;
   }
