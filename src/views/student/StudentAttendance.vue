@@ -7,11 +7,11 @@
     >
       <el-menu v-if="!isSidebarCollapsed">
         <el-menu-item index="1">
-          <i class="el-icon-menu"></i>
+          <el-icon><menu /></el-icon>
           <span class="menu-text">首页</span>
         </el-menu-item>
         <el-menu-item index="2">
-          <i class="el-icon-document"></i>
+          <el-icon><document /></el-icon>
           <span class="menu-text">考勤记录</span>
         </el-menu-item>
       </el-menu>
@@ -21,13 +21,15 @@
     <el-container>
       <el-header class="attendance-header">
         <el-button
-          type="link"
-          class="toggle-button"
-          @click="toggleSidebar"
-          aria-label="Toggle menu"
-        >
-          <i :class="isSidebarCollapsed ? 'el-icon-s-unfold' : 'el-icon-s-fold'"></i>
-        </el-button>
+            type="link"
+            class="toggle-button"
+            @click="toggleSidebar"
+            aria-label="Toggle menu"
+          >
+            <el-icon :size="24" style="vertical-align: middle;">
+              <component :is="isSidebarCollapsed ? Expand : Fold" />
+            </el-icon>
+          </el-button>
         <h1 class="header-title">我的考勤记录</h1>
       </el-header>
 
@@ -119,11 +121,6 @@
   </el-container>
 </template>
 <script>
-import { saveAs } from 'file-saver';
-import * as XLSX from 'xlsx';
-import axios from 'axios'; // 确保已安装 axios
-import { ElMessage } from 'element-plus'; // 用于消息提示
-
 export default {
   data() {
     return {
@@ -326,6 +323,15 @@ export default {
   },
 };
 </script>
+<script setup>
+import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx';
+import axios from 'axios'; // 确保已安装 axios
+import { ElMessage } from 'element-plus'; // 用于消息提示
+import { ref, computed } from 'vue';
+import { Expand, Fold, Menu, Document } from '@element-plus/icons-vue';
+import { Calendar, Notebook, DataLine, User } from '@element-plus/icons-vue';
+</script>
 <style scoped>
 .attendance-container {
   height: 100vh;
@@ -351,11 +357,16 @@ export default {
 }
 
 .toggle-button {
-  color: white;
-  margin-right: 20px;
+  color: #409eff;
+  padding: 0;
+  margin-right: 16px;
 }
 
 .header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
   margin: 0;
 }
 
@@ -371,7 +382,7 @@ export default {
 .no-data {
   text-align: center;
   padding: 50px 0;
-  color: #999;
+  color: #470404;
 }
 
 .el-table th,

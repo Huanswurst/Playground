@@ -161,4 +161,21 @@ export default {
 .login-card:hover {
   transform: translateY(-5px);
 }
+
+@media screen and (max-width: 768px) {
+  .login-card {
+    width: 90%;
+    margin: 0 auto;
+  }
+  
+  .el-form-item__content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .el-button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
 </style>

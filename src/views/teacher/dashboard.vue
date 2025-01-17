@@ -283,7 +283,7 @@ onBeforeUnmount(() => {
 }
 
 .toggle-button {
-  color: white;
+  color: #409eff;
   padding: 0;
   margin-right: 16px;
 }

@@ -60,8 +60,8 @@
             @click="toggleSidebar"
             aria-label="Toggle menu"
           >
-            <el-icon :size="24">
-              <component :is="isSidebarCollapsed ? 'Expand' : 'Fold'" />
+            <el-icon :size="24" style="vertical-align: middle;">
+              <component :is="isSidebarCollapsed ? Expand : Fold" />
             </el-icon>
           </el-button>
           <h1 class="header-title">学生首页</h1>
@@ -108,8 +108,9 @@
 </template>
 
 <script setup>
-import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
 import { ref, computed } from 'vue'
+import { Expand, Fold } from '@element-plus/icons-vue'
+import { Calendar, Notebook, DataLine, User } from '@element-plus/icons-vue'
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {
@@ -178,7 +179,7 @@ const getStatusTagType = (status) => {
 }
 
 .toggle-button {
-  color: white;
+  color: #409eff;
   padding: 0;
   margin-right: 16px;
 }

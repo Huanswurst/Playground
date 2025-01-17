@@ -1,52 +1,46 @@
 <template>
   <el-container>
-    <el-aside width="200px">
-      <el-menu default-active="1" class="el-menu-vertical-demo">
-        <el-menu-item index="1" route="/student/attendance">
-          <el-icon><calendar /></el-icon>
-          <span>返回考勤</span>
-        </el-menu-item>
-      </el-menu>
-    </el-aside>
-    
-    <el-container>
-      <el-header class="dashboard-header">
+    <el-header class="dashboard-header">
+      <div class="header-content">
+        <el-button type="primary" @click="$router.push('/student/attendance')" class="back-button">
+          返回考勤
+        </el-button>
         <h1 class="header-title">人脸识别考勤</h1>
-      </el-header>
+      </div>
+    </el-header>
       
-      <el-main>
-        <el-card class="camera-card" shadow="hover">
-          <div class="camera-section">
-            <video ref="video" autoplay playsinline class="camera-video"></video>
-            <canvas ref="canvas" style="display: none;"></canvas>
-            <div class="camera-controls">
-              <el-button type="primary" @click="switchCamera" class="control-button">
-                <el-icon><switch /></el-icon>
-                <span>切换摄像头</span>
-              </el-button>
-              <el-button type="success" @click="startRecognition" class="control-button">
-                <el-icon><camera /></el-icon>
-                <span>开始识别</span>
-              </el-button>
-            </div>
+    <el-main>
+      <el-card class="camera-card" shadow="hover">
+        <div class="camera-section">
+          <video ref="video" autoplay playsinline class="camera-video"></video>
+          <canvas ref="canvas" style="display: none;"></canvas>
+          <div class="camera-controls">
+            <el-button type="primary" @click="switchCamera" class="control-button">
+              <el-icon><switch /></el-icon>
+              <span>切换摄像头</span>
+            </el-button>
+            <el-button type="success" @click="startRecognition" class="control-button">
+              <el-icon><camera /></el-icon>
+              <span>开始识别</span>
+            </el-button>
           </div>
+        </div>
 
-          <el-alert
-            v-if="recognitionResult"
-            :title="recognitionResult"
-            type="success"
-            show-icon
-            class="recognition-result"
-          />
-        </el-card>
-      </el-main>
-    </el-container>
+        <el-alert
+          v-if="recognitionResult"
+          :title="recognitionResult"
+          type="success"
+          show-icon
+          class="recognition-result"
+        />
+      </el-card>
+    </el-main>
   </el-container>
 </template>
 
 <script setup>
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
-import { ref } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 
 const mediaStream = ref(null)
 const isFrontCamera = ref(false)
@@ -104,6 +98,37 @@ onBeforeUnmount(() => {
   padding: 0 20px;
 }
 
+.header-content {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.header-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.back-button {
+  max-width: 100px;
+  max-height: 80px;
+  padding: 15px;
+  margin-right: 20px;
+  background-color: white;
+  border-color: white;
+  color: #409eff;
+}
+
+.back-button .el-icon {
+  font-size: 25px;
+}
+
+.back-button span {
+  font-size: 15px;
+}
+
 .header-title {
   font-size: 24px;
   font-weight: bold;
@@ -113,9 +138,64 @@ onBeforeUnmount(() => {
 
 .camera-card {
   max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  margin: 10px auto;
+  padding: 10px;
   text-align: center;
+}
+
+@media screen and (max-width: 768px) {
+  .dashboard-header {
+    padding: 0 10px;
+  }
+  
+  .header-title {
+    font-size: 18px;
+  }
+  
+  .back-button {
+    max-width: 100px;
+    max-height: 80px;
+    padding: 15px;
+    margin-right: 20px;
+    background-color: white;
+    border-color: white;
+    color: #409eff;
+  }
+  
+  .back-button .el-icon {
+    font-size: 16px;
+  }
+  
+  .back-button span {
+    font-size: 13px;
+  }
+  
+  .camera-card {
+    width: 90%;
+    margin: 0 auto;
+    padding: 10px;
+  }
+  
+  .camera-video {
+    max-width: 100%;
+  }
+  
+  .camera-controls {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 5px 0;
+  }
+  
+  .control-button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .el-form-item__content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .camera-video {
@@ -128,12 +208,12 @@ onBeforeUnmount(() => {
 .camera-controls {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
+  margin: 10px 0;
 }
 
 .control-button {
   width: 160px;
+  margin-bottom: 10px !important;
 }
 
 .recognition-result {
