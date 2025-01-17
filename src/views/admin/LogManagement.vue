@@ -80,8 +80,8 @@
             @click="toggleSidebar"
             aria-label="Toggle menu"
           >
-            <el-icon :size="24">
-              <component :is="isSidebarCollapsed ? 'Expand' : 'Fold'" />
+            <el-icon :size="24" style="vertical-align: middle;">
+              <component :is="isSidebarCollapsed ? Expand : Fold" />
             </el-icon>
           </el-button>
           <h1 class="header-title">日志管理系统</h1>
@@ -212,7 +212,7 @@ const handlePageChange = (page) => {
 }
 
 .toggle-button {
-  color: white;
+  color: #409eff;
   padding: 0;
   margin-right: 16px;
 }
