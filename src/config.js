@@ -1,6 +1,6 @@
 export default {
   apiBaseUrl: process.env.NODE_ENV === 'production' 
-    ? 'https://www.huanswurst.top' 
+    ? 'https://www.huanswurst.top:5173' 
     : 'http://localhost:8000',
   
   // API endpoints
