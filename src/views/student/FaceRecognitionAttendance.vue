@@ -71,14 +71,49 @@ const fetchCourseInfo = async () => {
 // 启动摄像头
 const startCamera = async () => {
   try {
-    const constraints = {
-      video: { facingMode: isFrontCamera.value ? "user" : "environment" },
+    // 检查浏览器是否支持媒体设备
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      recognitionResult.value = "您的浏览器不支持摄像头访问"
+      return
     }
+
+    // 检查是否在HTTPS下运行
+    if (window.location.protocol !== 'https:') {
+      recognitionResult.value = "请确保在HTTPS环境下访问"
+      return
+    }
+
+    const constraints = {
+      video: { 
+        facingMode: isFrontCamera.value ? "user" : "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+    }
+    
     mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
     video.value.srcObject = mediaStream.value
+    
+    // 添加摄像头状态监听
+    mediaStream.value.getVideoTracks()[0].onended = () => {
+      recognitionResult.value = "摄像头连接已断开"
+    }
+    
   } catch (error) {
     console.error("无法访问摄像头:", error)
-    recognitionResult.value = "无法访问摄像头，请检查权限。"
+    let errorMessage = "无法访问摄像头"
+    
+    if (error.name === 'NotAllowedError') {
+      errorMessage = "请允许摄像头访问权限"
+    } else if (error.name === 'NotFoundError') {
+      errorMessage = "未找到可用的摄像头设备"
+    } else if (error.name === 'NotReadableError') {
+      errorMessage = "摄像头已被其他应用占用"
+    } else if (error.name === 'OverconstrainedError') {
+      errorMessage = "无法满足摄像头配置要求"
+    }
+    
+    recognitionResult.value = errorMessage
   }
 }
 
