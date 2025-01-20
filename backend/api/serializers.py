@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+from .models import Attendance, Class, Course, Student, Teacher
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,3 +31,35 @@ class LoginSerializer(serializers.Serializer):
         if user and user.is_active:
             return user
         raise serializers.ValidationError("Incorrect Credentials")
+
+class ClassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Class
+        fields = '__all__'
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = '__all__'
+
+class StudentSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Student
+        fields = '__all__'
+
+class TeacherSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Teacher
+        fields = '__all__'
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    student = StudentSerializer(read_only=True)
+    course = CourseSerializer(read_only=True)
+    
+    class Meta:
+        model = Attendance
+        fields = '__all__'

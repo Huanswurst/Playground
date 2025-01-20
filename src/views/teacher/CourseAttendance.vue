@@ -118,35 +118,10 @@ const toggleSidebar = () => {
 
 const isMobile = ref(false)
 const searchQuery = ref('')
-const course = ref({
-  id: 1,
-  courseName: '数学',
-  teacherName: '张老师',
-  studentCount: 50,
-})
-const attendanceData = ref([
-  {
-    date: '2023-10-01',
-    class: '高一（1）班',
-    attendanceRate: 95,
-    absentCount: 2,
-    lateCount: 1,
-  },
-  {
-    date: '2023-10-02',
-    class: '高一（2）班',
-    attendanceRate: 90,
-    absentCount: 3,
-    lateCount: 2,
-  },
-  {
-    date: '2023-10-03',
-    class: '高二（1）班',
-    attendanceRate: 85,
-    absentCount: 5,
-    lateCount: 3,
-  },
-])
+const course = ref({})
+const attendanceData = ref([])
+const loading = ref(false)
+const error = ref(null)
 
 // 计算属性
 const overallAttendanceRate = computed(() => {
@@ -176,10 +151,51 @@ const checkDevice = () => {
 }
 
 const fetchCourseData = async (courseId) => {
+  loading.value = true
+  error.value = null
   try {
-    console.log('课程数据加载成功')
-  } catch (error) {
-    console.error('课程数据加载失败')
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.teacher.courses}${courseId}/`, {
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('获取课程数据失败')
+    }
+    
+    const data = await response.json()
+    course.value = data
+    await fetchAttendanceData(courseId)
+  } catch (err) {
+    error.value = err.message
+    ElMessage.error('获取课程数据失败：' + err.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchAttendanceData = async (courseId) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.teacher.attendance}?course_id=${courseId}`, {
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('获取考勤数据失败')
+    }
+    
+    const data = await response.json()
+    attendanceData.value = data
+  } catch (err) {
+    error.value = err.message
+    ElMessage.error('获取考勤数据失败：' + err.message)
   }
 }
 
@@ -187,8 +203,30 @@ const handleSearch = () => {
   // 搜索逻辑已在 computed 中实现
 }
 
-const handlePublishAttendance = () => {
-  console.log('考勤发布成功')
+const handlePublishAttendance = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.teacher.attendance}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        course_id: course.value.id,
+        date: new Date().toISOString().split('T')[0]
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('发布考勤失败')
+    }
+    
+    ElMessage.success('考勤发布成功')
+    await fetchAttendanceData(course.value.id)
+  } catch (err) {
+    ElMessage.error('发布考勤失败：' + err.message)
+  }
 }
 
 const getProgressColor = (attendanceRate) => {

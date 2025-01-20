@@ -71,7 +71,7 @@
         </div>
 
         <!-- 考勤记录表格 -->
-        <el-table :data="attendanceList" style="width: 100%">
+        <el-table :data="attendanceList" style="width: 100%" v-loading="loading">
           <el-table-column prop="username" label="用户名"></el-table-column>
           <el-table-column prop="role" label="角色"></el-table-column>
           <el-table-column prop="date" label="日期"></el-table-column>
@@ -99,7 +99,9 @@
 
 <script setup>
 import { Menu as IconMenu, Setting, Expand, Fold, Document, Warning } from '@element-plus/icons-vue'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import config from '@/config'
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {
@@ -110,38 +112,106 @@ const dateRange = ref([])
 const filter = ref({
   userType: ''
 })
-const attendanceList = ref([
-  {
-    username: 'student1',
-    role: '学生',
-    date: '2023-10-01',
-    status: '正常'
-  },
-  {
-    username: 'teacher1',
-    role: '教师',
-    date: '2023-10-01',
-    status: '迟到'
-  }
-])
-const total = ref(100)
+const attendanceList = ref([])
+const total = ref(0)
 const pageSize = ref(10)
+const currentPage = ref(1)
+const loading = ref(false)
+const error = ref(null)
+
+const fetchAttendance = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const token = localStorage.getItem('token')
+    const params = new URLSearchParams({
+      start_date: dateRange.value[0]?.toISOString().split('T')[0] || '',
+      end_date: dateRange.value[1]?.toISOString().split('T')[0] || '',
+      user_type: filter.value.userType,
+      page: currentPage.value,
+      page_size: pageSize.value
+    })
+    
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.admin.attendance}?${params.toString()}`, {
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('获取考勤数据失败')
+    }
+    
+    const data = await response.json()
+    attendanceList.value = data.results
+    total.value = data.count
+  } catch (err) {
+    error.value = err.message
+    ElMessage.error('获取考勤数据失败：' + err.message)
+  } finally {
+    loading.value = false
+  }
+}
 
 const handleSearch = () => {
-  console.log('查询考勤记录', filter.value)
+  currentPage.value = 1
+  fetchAttendance()
 }
 
-const handleEdit = (record) => {
-  console.log('编辑考勤记录', record)
+const handleEdit = async (record) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.admin.attendance}${record.id}/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(record)
+    })
+    
+    if (!response.ok) {
+      throw new Error('更新考勤记录失败')
+    }
+    
+    ElMessage.success('考勤记录更新成功')
+    fetchAttendance()
+  } catch (err) {
+    ElMessage.error('更新考勤记录失败：' + err.message)
+  }
 }
 
-const handleDelete = (record) => {
-  console.log('删除考勤记录', record)
+const handleDelete = async (record) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.admin.attendance}${record.id}/`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Token ${token}`
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('删除考勤记录失败')
+    }
+    
+    ElMessage.success('考勤记录删除成功')
+    fetchAttendance()
+  } catch (err) {
+    ElMessage.error('删除考勤记录失败：' + err.message)
+  }
 }
 
 const handlePageChange = (page) => {
-  console.log('切换页码', page)
+  currentPage.value = page
+  fetchAttendance()
 }
+
+// 初始化时获取数据
+onMounted(() => {
+  fetchAttendance()
+})
 </script>
 
 <style scoped>

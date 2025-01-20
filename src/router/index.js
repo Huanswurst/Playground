@@ -6,6 +6,7 @@ import Register from '../views/Register.vue';
 import StudentDashboard from '../views/student/dashboard.vue';
 import StudentAttendance from '../views/student/StudentAttendance.vue';
 import FaceRecognitionAttendance from '../views/student/FaceRecognitionAttendance.vue';
+import GeoFaceRecognitionAttendance from '../views/student/GeoFaceRecognitionAttendance.vue';
 /*import StudentCheckIn from '../views/student/CheckIn.vue';
 import StudentCheckOut from '../views/student/CheckOut.vue';
 */
@@ -30,6 +31,7 @@ const routes = [
     { path: '/student/dashboard', component: StudentDashboard },
     { path: '/student/attendance', component: StudentAttendance },
     { path: '/student/face-recognition', component: FaceRecognitionAttendance },
+    { path: '/student/geo-attendance', component: GeoFaceRecognitionAttendance },
     /*{ path: '/student/checkin', component: StudentCheckIn },
     { path: '/student/checkout', component: StudentCheckOut },*/
     // 教师路由
