@@ -57,6 +57,9 @@ const recognitionResult = ref("")
 const locationStatus = ref("正在获取位置...")
 const locationStatusType = ref("info")
 const userLocation = ref(null)
+const isLoading = ref(false)
+const courseInfo = ref(null)
+const allowedLocation = ref(null)
 
 // 获取地理位置
 const getLocation = () => {
@@ -83,23 +86,51 @@ const getLocation = () => {
   )
 }
 
+// 获取课程信息和允许的地理位置范围
+const fetchCourseAndLocationInfo = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const [courseResponse, locationResponse] = await Promise.all([
+      fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.courses}`, {
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }),
+      fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.location}`, {
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+    ])
+    
+    const [courseData, locationData] = await Promise.all([
+      courseResponse.json(),
+      locationResponse.json()
+    ])
+    
+    courseInfo.value = courseData[0] // 假设学生只有一个当前课程
+    allowedLocation.value = locationData
+  } catch (error) {
+    console.error('获取课程或位置信息失败:', error)
+    locationStatus.value = "获取位置信息失败"
+    locationStatusType.value = "error"
+  }
+}
+
 // 验证位置是否在允许范围内
 const verifyLocation = () => {
-  // 这里需要替换为实际的允许范围坐标
-  const allowedLocation = {
-    latitude: 31.2304, // 示例：上海纬度
-    longitude: 121.4737, // 示例：上海经度
-    radius: 100 // 允许半径（米）
-  }
+  if (!allowedLocation.value || !userLocation.value) return
 
   const distance = calculateDistance(
     userLocation.value.latitude,
     userLocation.value.longitude,
-    allowedLocation.latitude,
-    allowedLocation.longitude
+    allowedLocation.value.latitude,
+    allowedLocation.value.longitude
   )
 
-  if (distance <= allowedLocation.radius) {
+  if (distance <= allowedLocation.value.radius) {
     locationStatus.value = "位置验证通过"
     locationStatusType.value = "success"
   } else {
@@ -154,19 +185,48 @@ const startRecognition = async () => {
     return
   }
 
-  const context = canvas.value.getContext("2d")
-  canvas.value.width = video.value.videoWidth
-  canvas.value.height = video.value.videoHeight
-  context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
-  
-  // 这里可以添加提交位置信息的逻辑
-  recognitionResult.value = "识别成功！考勤已记录"
+  try {
+    isLoading.value = true
+    const context = canvas.value.getContext("2d")
+    canvas.value.width = video.value.videoWidth
+    canvas.value.height = video.value.videoHeight
+    context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
+    
+    // 提交带地理位置的考勤记录
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.attendance}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        course_id: courseInfo.value.id,
+        status: 'present',
+        recognition_data: canvas.value.toDataURL(),
+        location: {
+          latitude: userLocation.value.latitude,
+          longitude: userLocation.value.longitude
+        }
+      })
+    })
+    
+    if (!response.ok) throw new Error('考勤提交失败')
+    
+    recognitionResult.value = "识别成功！考勤已记录"
+  } catch (error) {
+    console.error('考勤提交失败:', error)
+    recognitionResult.value = "考勤提交失败，请稍后重试"
+  } finally {
+    isLoading.value = false
+  }
 }
 
-// 组件挂载时启动摄像头和位置获取
+// 组件挂载时启动摄像头、获取位置和课程信息
 onMounted(() => {
   startCamera()
   getLocation()
+  fetchCourseAndLocationInfo()
 })
 
 // 组件卸载时关闭摄像头

@@ -46,6 +46,27 @@ import { ref, onBeforeUnmount } from 'vue'
 const mediaStream = ref(null)
 const isFrontCamera = ref(false)
 const recognitionResult = ref("")
+const isLoading = ref(false)
+const courseInfo = ref(null)
+const attendanceStatus = ref(null)
+
+// 获取课程信息
+const fetchCourseInfo = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.courses}`, {
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    const data = await response.json()
+    courseInfo.value = data[0] // 假设学生只有一个当前课程
+  } catch (error) {
+    console.error('获取课程信息失败:', error)
+    recognitionResult.value = "获取课程信息失败，请稍后重试"
+  }
+}
 
 // 启动摄像头
 const startCamera = async () => {
@@ -72,15 +93,43 @@ const switchCamera = async () => {
 
 // 开始人脸识别
 const startRecognition = async () => {
-  const context = canvas.value.getContext("2d")
-  canvas.value.width = video.value.videoWidth
-  canvas.value.height = video.value.videoHeight
-  context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
-  recognitionResult.value = "识别成功！考勤已记录"
+  try {
+    isLoading.value = true
+    const context = canvas.value.getContext("2d")
+    canvas.value.width = video.value.videoWidth
+    canvas.value.height = video.value.videoHeight
+    context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
+    
+    // 提交考勤记录
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.attendance}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        course_id: courseInfo.value.id,
+        status: 'present',
+        recognition_data: canvas.value.toDataURL()
+      })
+    })
+    
+    if (!response.ok) throw new Error('考勤提交失败')
+    
+    recognitionResult.value = "识别成功！考勤已记录"
+    attendanceStatus.value = 'present'
+  } catch (error) {
+    console.error('考勤提交失败:', error)
+    recognitionResult.value = "考勤提交失败，请稍后重试"
+  } finally {
+    isLoading.value = false
+  }
 }
 
-// 组件挂载时启动摄像头
+// 组件挂载时启动摄像头并获取课程信息
 startCamera()
+fetchCourseInfo()
 
 // 组件卸载时关闭摄像头
 onBeforeUnmount(() => {
