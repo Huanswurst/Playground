@@ -20,9 +20,9 @@ server: {
   host: '0.0.0.0', // 允许外部访问
   port: 5173, // 使用 HTTP 端口
   hmr: {
-    host: 'huanswurst.top', // 允许的域名
-    port: 5173, // 确保端口一致
-    protocol: 'wss', // 使用 WebSocket Secure
-  },
+    host: 'localhost',
+    port: 5173,
+    protocol: 'ws'
+  }
 },
 });
