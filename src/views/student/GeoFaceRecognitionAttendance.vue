@@ -12,6 +12,9 @@
       
     <el-main>
       <el-card class="camera-card" shadow="hover">
+        <!-- 添加地图容器 -->
+        <div id="map-container" style="height: 400px; margin-bottom: 20px;"></div>
+
         <div class="camera-section">
           <video ref="video" autoplay playsinline class="camera-video"></video>
           <canvas ref="canvas" style="display: none;"></canvas>
@@ -34,6 +37,27 @@
           show-icon
           class="recognition-result"
         />
+        <el-alert
+          v-if="userLocation"
+          :title="`当前位置：纬度 ${userLocation.latitude.toFixed(6)}，经度 ${userLocation.longitude.toFixed(6)}`"
+          type="info"
+          show-icon
+          class="recognition-result"
+        >
+          <template #default>
+            <div class="location-details">
+              <p>纬度: {{ userLocation.latitude.toFixed(6) }}</p>
+              <p>经度: {{ userLocation.longitude.toFixed(6) }}</p>
+              <el-button 
+                type="primary" 
+                size="small"
+                @click="copyCoordinates"
+              >
+                复制坐标
+              </el-button>
+            </div>
+          </template>
+        </el-alert>
 
         <el-alert
           v-if="recognitionResult"
@@ -50,6 +74,7 @@
 <script setup>
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 import { ref, onBeforeUnmount, onMounted } from 'vue'
+import AMapLoader from '@amap/amap-jsapi-loader'
 
 const mediaStream = ref(null)
 const isFrontCamera = ref(false)
@@ -60,6 +85,78 @@ const userLocation = ref(null)
 const isLoading = ref(false)
 const courseInfo = ref(null)
 const allowedLocation = ref(null)
+const map = ref(null)
+
+// 初始化地图
+const initMap = async () => {
+  try {
+    const AMap = await AMapLoader.load({
+      key: import.meta.env.VITE_AMAP_KEY,
+      version: '2.0',
+      plugins: ['AMap.Geolocation']
+    })
+
+    map.value = new AMap.Map('map-container', {
+      zoom: 15,
+      resizeEnable: true
+    })
+
+    // 添加定位控件
+    const geolocation = new AMap.Geolocation({
+      enableHighAccuracy: true,
+      timeout: 20000,  // 延长超时时间
+      maximumAge: 0,
+      showMarker: true,
+      showCircle: true,
+      panToLocation: true,
+      convert: true,
+      extensions: 'all',
+      GeoLocationFirst: true,
+      noIpLocate: true, // 禁用IP定位
+      noGeoLocation: false,
+      useNative: true,  // 强制使用原生定位
+      showButton: false // 隐藏默认定位按钮
+    })
+
+    map.value.addControl(geolocation)
+    
+    // 增加定位重试机制
+    let retryCount = 0
+    const maxRetries = 3
+    
+    const getLocationWithRetry = () => {
+      geolocation.getCurrentPosition((status, result) => {
+        if (status === 'complete' && result.accuracy < 50) {
+          // 精度小于50米时接受
+          userLocation.value = {
+            latitude: result.position.lat,
+            longitude: result.position.lng
+          }
+          verifyLocation()
+        } else if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(getLocationWithRetry, 2000)
+        } else {
+          locationStatus.value = "无法获取精确位置"
+          locationStatusType.value = "error"
+        }
+      })
+    }
+    
+    getLocationWithRetry()
+
+    // 监听地图点击事件
+    map.value.on('click', (e) => {
+      userLocation.value = {
+        latitude: e.lnglat.lat,
+        longitude: e.lnglat.lng
+      }
+      verifyLocation()
+    })
+  } catch (error) {
+    console.error('地图加载失败:', error)
+  }
+}
 
 // 获取地理位置
 const getLocation = () => {
@@ -69,21 +166,49 @@ const getLocation = () => {
     return
   }
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      userLocation.value = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude
+  let retryCount = 0
+  const maxRetries = 3
+  
+  const tryGetLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (position.coords.accuracy < 50) {
+          userLocation.value = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          }
+          verifyLocation()
+        } else if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(tryGetLocation, 2000)
+        } else {
+          locationStatus.value = "无法获取精确位置"
+          locationStatusType.value = "error"
+        }
+      },
+      (error) => {
+        if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(tryGetLocation, 2000)
+        } else {
+          locationStatus.value = "无法获取位置信息"
+          locationStatusType.value = "error"
+          console.error("获取位置失败:", error)
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,  // 延长超时时间
+        maximumAge: 0,
+        desiredAccuracy: 10,  // 期望精度10米
+        requireAltitude: false,
+        requireHeading: false,
+        requireSpeed: false
       }
-      verifyLocation()
-    },
-    (error) => {
-      locationStatus.value = "无法获取位置信息"
-      locationStatusType.value = "error"
-      console.error("获取位置失败:", error)
-    },
-    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-  )
+    )
+  }
+  
+  tryGetLocation()
 }
 
 // 获取课程信息和允许的地理位置范围
@@ -227,7 +352,20 @@ onMounted(() => {
   startCamera()
   getLocation()
   fetchCourseAndLocationInfo()
+  initMap()
 })
+
+// 复制坐标到剪贴板
+const copyCoordinates = () => {
+  const text = `${userLocation.value.latitude.toFixed(6)},${userLocation.value.longitude.toFixed(6)}`
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      ElMessage.success('坐标已复制到剪贴板')
+    })
+    .catch(() => {
+      ElMessage.error('复制失败')
+    })
+}
 
 // 组件卸载时关闭摄像头
 onBeforeUnmount(() => {
