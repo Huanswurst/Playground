@@ -25,7 +25,6 @@
           <el-button type="primary" @click="handleLogin">登录</el-button>
           <el-button @click="goToRegister">注册</el-button>
           <el-button v-if="token" type="danger" @click="logout">登出</el-button>
-          <!-- <el-button type="info" @click="testApiConnection">测试API连接</el-button> -->
         </el-form-item>
       </el-form>
     </el-card>
@@ -42,17 +41,6 @@
     </div>
   </el-footer>
 </template>
-
-<style scoped>
-.footer {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  padding: 10px 0;
-  background-color: #f5f7fa;
-}
-</style>
 
 <script>
 import config from '../config';
@@ -122,7 +110,6 @@ export default {
       if (token && expires && Date.now() < Number(expires)) {
         this.token = token;
         this.expires = Number(expires);
-        // 根据角色跳转到对应页面
         const role = localStorage.getItem('authRole') || 'student';
         if (role !== 'admin') {
           this.$router.push(`/${role}/dashboard`);
@@ -139,28 +126,7 @@ export default {
     },
     goToRegister() {
       this.$router.push('/register');
-    },
-    /* async testApiConnection() {
-      try {
-        const response = await fetch('http://8.153.106.1:8000/api/test/', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API连接失败: ${response.status} ${errorText}`);
-        }
-        
-        const data = await response.json();
-        this.$message.success(`API连接成功: ${data.message}`);
-      } catch (error) {
-        console.error('API连接错误详情:', error);
-        this.$message.error(error.message);
-      }
-    } */
+    }
   },
   created() {
     this.checkLoginStatus();
@@ -173,8 +139,11 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
+  position: relative;
+  padding-bottom: 60px;
 }
+
 .login-card {
   width: 400px;
   padding: 20px;
@@ -182,6 +151,15 @@ export default {
 }
 .login-card:hover {
   transform: translateY(-5px);
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  padding: 10px 0;
+  background-color: #f5f7fa;
 }
 
 @media screen and (max-width: 768px) {
