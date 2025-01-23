@@ -5,9 +5,9 @@
       <el-form :model="loginForm" :rules="rules" ref="loginFormRef">
         <el-form-item label="角色" prop="role">
           <el-radio-group v-model="loginForm.role">
-            <el-radio label="student">学生</el-radio>
-            <el-radio label="teacher">教师</el-radio>
-            <el-radio label="admin">管理员</el-radio>
+            <el-radio value="student">学生</el-radio>
+            <el-radio value="teacher">教师</el-radio>
+            <el-radio value="admin">管理员</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="用户名" prop="username">
