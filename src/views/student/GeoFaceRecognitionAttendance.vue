@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 
 // 高德地图密钥和安全密钥
@@ -77,10 +77,10 @@ const isLoading = ref(false) // 加载状态
 const courseInfo = ref(null) // 课程信息
 
 // 使用高德地图获取 IP 定位
-const getLocationByAMap = () => {
+const getLocationByAMap = (AMap) => {
   return new Promise((resolve, reject) => {
-    if (!window.AMap) {
-      reject(new Error('高德地图 API 未加载'))
+    if (!AMap || !AMap.Geolocation) {
+      reject(new Error('高德地图 API 未加载或版本不兼容'))
       return
     }
 
@@ -253,35 +253,35 @@ const startRecognition = async () => {
 }
 
 // 组件挂载时启动摄像头、获取位置和课程信息
-onMounted(async () => {
-  // 动态加载高德地图 API
-  const script = document.createElement('script')
-  script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}`
-  script.onload = async () => {
-    if (!window.AMap) {
-      console.error('高德地图 API 未加载，请检查网络或引入是否正确')
-      locationStatus.value = '高德地图 API 未加载'
-      locationStatusType.value = 'error'
-      return
-    }
+onMounted(() => {
+  // 设置高德地图安全密钥
+  window._AMapSecurityConfig = {
+    securityJsCode: AMAP_SECRET,
+  }
 
-    await startCamera()
-    try {
-      await getLocationByAMap()
-      verifyLocation()
-    } catch (error) {
-      locationStatus.value = '获取位置失败'
+  // 加载高德地图 JS API
+  AMapLoader.load({
+    key: AMAP_KEY,
+    version: '2.0',
+    plugins: ['AMap.Geolocation'], // 需要使用的插件
+  })
+    .then(async (AMap) => {
+      await startCamera()
+      try {
+        await getLocationByAMap(AMap)
+        verifyLocation()
+      } catch (error) {
+        locationStatus.value = '获取位置失败'
+        locationStatusType.value = 'error'
+        console.error('获取位置失败:', error)
+      }
+      await fetchCourseAndLocationInfo()
+    })
+    .catch((error) => {
+      console.error('高德地图加载失败:', error)
+      locationStatus.value = '高德地图加载失败'
       locationStatusType.value = 'error'
-      console.error('获取位置失败:', error)
-    }
-    await fetchCourseAndLocationInfo()
-  }
-  script.onerror = () => {
-    console.error('高德地图 API 加载失败')
-    locationStatus.value = '高德地图 API 加载失败'
-    locationStatusType.value = 'error'
-  }
-  document.head.appendChild(script)
+    })
 })
 
 // 组件卸载时关闭摄像头
