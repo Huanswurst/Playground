@@ -97,7 +97,7 @@ const getLocationByAMap = (AMap) => {
         userLocation.value = { latitude, longitude }
         resolve({ latitude, longitude })
       } else {
-        reject(new Error('获取位置失败'))
+    console.error('定位失败，错误信息：', result);
       }
     })
   })
