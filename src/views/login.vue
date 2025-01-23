@@ -30,7 +30,32 @@
       </el-form>
     </el-card>
   </el-container>
+<el-footer class="footer">
+  <div class="footer-content">
+    <el-link 
+      href="https://beian.miit.gov.cn" 
+      target="_blank"
+      type="primary"
+    >
+      苏ICP备2025157736号-1
+    </el-link>
+  </div>
+</el-footer>
 </template>
+
+<style scoped>
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  padding: 10px 0;
+  background-color: #f5f7fa;
+}
+.footer-content {
+  margin: 0 auto;
+}
+</style>
 
 <script>
 import config from '../config';
