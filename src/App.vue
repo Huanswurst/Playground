@@ -1,12 +1,12 @@
 <template>
   <div id="app">
     <router-view />
-    <AppFooter />
+    <Footer />
   </div>
 </template>
 
 <script setup>
-import AppFooter from './components/Footer.vue'
+import Footer from './components/Footer.vue'
 </script>
 
 <style>
