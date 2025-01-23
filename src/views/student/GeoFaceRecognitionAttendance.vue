@@ -9,24 +9,29 @@
         <h1 class="header-title">人脸识别考勤（带位置验证）</h1>
       </div>
     </el-header>
-      
+
     <el-main>
       <el-card class="camera-card" shadow="hover">
         <div class="camera-section">
+          <!-- 视频元素 -->
           <video ref="video" autoplay playsinline class="camera-video"></video>
+          <!-- 画布元素，用于捕获图像 -->
           <canvas ref="canvas" style="display: none;"></canvas>
           <div class="camera-controls">
+            <!-- 切换摄像头按钮 -->
             <el-button type="primary" @click="switchCamera" class="control-button">
               <el-icon><Switch /></el-icon>
               <span>切换摄像头</span>
             </el-button>
+            <!-- 开始识别按钮 -->
             <el-button type="success" @click="startRecognition" class="control-button">
-              <el-icon><camera /></el-icon>
+              <el-icon><Camera /></el-icon>
               <span>开始识别</span>
             </el-button>
           </div>
         </div>
 
+        <!-- 位置验证状态提示 -->
         <el-alert
           v-if="locationStatus"
           :title="locationStatus"
@@ -35,6 +40,7 @@
           class="recognition-result"
         />
 
+        <!-- 人脸识别结果提示 -->
         <el-alert
           v-if="recognitionResult"
           :title="recognitionResult"
@@ -48,24 +54,29 @@
 </template>
 
 <script setup>
-import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 import { ref, onBeforeUnmount, onMounted } from 'vue'
+import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 
-const mediaStream = ref(null)
-const isFrontCamera = ref(false)
-const recognitionResult = ref("")
-const locationStatus = ref("正在获取位置...")
-const locationStatusType = ref("info")
-const userLocation = ref(null)
-const isLoading = ref(false)
-const courseInfo = ref(null)
-const allowedLocation = ref(null)
+// 摄像头相关
+const video = ref(null) // 视频元素引用
+const canvas = ref(null) // 画布元素引用
+const mediaStream = ref(null) // 媒体流对象
+const isFrontCamera = ref(false) // 是否使用前置摄像头
+
+// 状态相关
+const recognitionResult = ref('') // 人脸识别结果
+const locationStatus = ref('正在获取位置...') // 位置验证状态
+const locationStatusType = ref('info') // 位置验证状态类型
+const userLocation = ref(null) // 用户当前位置
+const allowedLocation = ref(null) // 允许的位置范围
+const isLoading = ref(false) // 加载状态
+const courseInfo = ref(null) // 课程信息
 
 // 获取地理位置
 const getLocation = () => {
   if (!navigator.geolocation) {
-    locationStatus.value = "浏览器不支持地理位置功能"
-    locationStatusType.value = "error"
+    locationStatus.value = '浏览器不支持地理位置功能'
+    locationStatusType.value = 'error'
     return
   }
 
@@ -73,14 +84,14 @@ const getLocation = () => {
     (position) => {
       userLocation.value = {
         latitude: position.coords.latitude,
-        longitude: position.coords.longitude
+        longitude: position.coords.longitude,
       }
       verifyLocation()
     },
     (error) => {
-      locationStatus.value = "无法获取位置信息"
-      locationStatusType.value = "error"
-      console.error("获取位置失败:", error)
+      locationStatus.value = '无法获取位置信息'
+      locationStatusType.value = 'error'
+      console.error('获取位置失败:', error)
     },
     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
   )
@@ -93,29 +104,29 @@ const fetchCourseAndLocationInfo = async () => {
     const [courseResponse, locationResponse] = await Promise.all([
       fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.courses}`, {
         headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
       }),
       fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.location}`, {
         headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+          Authorization: `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }),
     ])
-    
+
     const [courseData, locationData] = await Promise.all([
       courseResponse.json(),
-      locationResponse.json()
+      locationResponse.json(),
     ])
-    
+
     courseInfo.value = courseData[0] // 假设学生只有一个当前课程
     allowedLocation.value = locationData
   } catch (error) {
     console.error('获取课程或位置信息失败:', error)
-    locationStatus.value = "获取位置信息失败"
-    locationStatusType.value = "error"
+    locationStatus.value = '获取位置信息失败'
+    locationStatusType.value = 'error'
   }
 }
 
@@ -131,26 +142,26 @@ const verifyLocation = () => {
   )
 
   if (distance <= allowedLocation.value.radius) {
-    locationStatus.value = "位置验证通过"
-    locationStatusType.value = "success"
+    locationStatus.value = '位置验证通过'
+    locationStatusType.value = 'success'
   } else {
     locationStatus.value = `当前位置超出允许范围（距离${distance.toFixed(0)}米）`
-    locationStatusType.value = "error"
+    locationStatusType.value = 'error'
   }
 }
 
 // 计算两点间距离（米）
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3 // 地球半径（米）
-  const φ1 = lat1 * Math.PI/180
-  const φ2 = lat2 * Math.PI/180
-  const Δφ = (lat2-lat1) * Math.PI/180
-  const Δλ = (lon2-lon1) * Math.PI/180
+  const φ1 = (lat1 * Math.PI) / 180
+  const φ2 = (lat2 * Math.PI) / 180
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180
 
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 
   return R * c
 }
@@ -158,23 +169,24 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 // 启动摄像头
 const startCamera = async () => {
   try {
-    // 检查浏览器是否支持mediaDevices
+    // 检查浏览器是否支持媒体设备
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('浏览器不支持摄像头访问')
     }
 
-    // 检查页面是否通过HTTPS加载
+    // 检查是否在HTTPS下运行
     if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
       throw new Error('摄像头访问需要HTTPS连接')
     }
 
+    // 获取媒体流
     const constraints = {
-      video: { facingMode: isFrontCamera.value ? "user" : "environment" },
+      video: { facingMode: isFrontCamera.value ? 'user' : 'environment' },
     }
     mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
     video.value.srcObject = mediaStream.value
   } catch (error) {
-    console.error("无法访问摄像头:", error)
+    console.error('无法访问摄像头:', error)
     recognitionResult.value = `无法访问摄像头：${error.message}。请确保：
     1. 使用HTTPS连接
     2. 授予摄像头权限
@@ -193,25 +205,25 @@ const switchCamera = async () => {
 
 // 开始人脸识别
 const startRecognition = async () => {
-  if (locationStatusType.value !== "success") {
-    recognitionResult.value = "请先通过位置验证"
+  if (locationStatusType.value !== 'success') {
+    recognitionResult.value = '请先通过位置验证'
     return
   }
 
   try {
     isLoading.value = true
-    const context = canvas.value.getContext("2d")
+    const context = canvas.value.getContext('2d')
     canvas.value.width = video.value.videoWidth
     canvas.value.height = video.value.videoHeight
     context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
-    
+
     // 提交带地理位置的考勤记录
     const token = localStorage.getItem('token')
     const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.attendance}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Token ${token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         course_id: courseInfo.value.id,
@@ -219,17 +231,17 @@ const startRecognition = async () => {
         recognition_data: canvas.value.toDataURL(),
         location: {
           latitude: userLocation.value.latitude,
-          longitude: userLocation.value.longitude
-        }
-      })
+          longitude: userLocation.value.longitude,
+        },
+      }),
     })
-    
+
     if (!response.ok) throw new Error('考勤提交失败')
-    
-    recognitionResult.value = "识别成功！考勤已记录"
+
+    recognitionResult.value = '识别成功！考勤已记录'
   } catch (error) {
     console.error('考勤提交失败:', error)
-    recognitionResult.value = "考勤提交失败，请稍后重试"
+    recognitionResult.value = '考勤提交失败，请稍后重试'
   } finally {
     isLoading.value = false
   }
@@ -251,7 +263,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* 保持原有样式不变 */
+/* 样式保持不变 */
 .dashboard-header {
   background-color: #409eff;
   color: white;
@@ -310,12 +322,12 @@ onBeforeUnmount(() => {
     padding: 0 10px;
   }
   .el-button + .el-button {
-  margin-left: 0 !important;
-}
+    margin-left: 0 !important;
+  }
   .header-title {
     font-size: 18px;
   }
-  
+
   .back-button {
     max-width: 100px;
     max-height: 80px;
@@ -325,37 +337,37 @@ onBeforeUnmount(() => {
     border-color: white;
     color: #409eff;
   }
-  
+
   .back-button .el-icon {
     font-size: 16px;
   }
-  
+
   .back-button span {
     font-size: 13px;
   }
-  
+
   .camera-card {
     width: 90%;
     margin: 0 auto;
     padding: 10px;
   }
-  
+
   .camera-video {
     max-width: 100%;
   }
-  
+
   .camera-controls {
     flex-direction: column;
     align-items: center;
     width: 100%;
     margin: 5px 0;
   }
-  
+
   .control-button {
     width: 100%;
     margin-bottom: 10px;
   }
-  
+
   .el-form-item__content {
     flex-direction: column;
     align-items: flex-start;
