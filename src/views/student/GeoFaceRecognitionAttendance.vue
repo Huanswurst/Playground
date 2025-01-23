@@ -57,6 +57,10 @@
 import { ref, onBeforeUnmount, onMounted } from 'vue'
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 
+// 高德地图密钥和安全密钥
+const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9' // 你的高德地图 API Key
+const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d' // 你的高德地图安全密钥
+
 // 摄像头相关
 const video = ref(null) // 视频元素引用
 const canvas = ref(null) // 画布元素引用
@@ -250,16 +254,34 @@ const startRecognition = async () => {
 
 // 组件挂载时启动摄像头、获取位置和课程信息
 onMounted(async () => {
-  await startCamera()
-  try {
-    await getLocationByAMap()
-    verifyLocation()
-  } catch (error) {
-    locationStatus.value = '获取位置失败'
-    locationStatusType.value = 'error'
-    console.error('获取位置失败:', error)
+  // 动态加载高德地图 API
+  const script = document.createElement('script')
+  script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}`
+  script.onload = async () => {
+    if (!window.AMap) {
+      console.error('高德地图 API 未加载，请检查网络或引入是否正确')
+      locationStatus.value = '高德地图 API 未加载'
+      locationStatusType.value = 'error'
+      return
+    }
+
+    await startCamera()
+    try {
+      await getLocationByAMap()
+      verifyLocation()
+    } catch (error) {
+      locationStatus.value = '获取位置失败'
+      locationStatusType.value = 'error'
+      console.error('获取位置失败:', error)
+    }
+    await fetchCourseAndLocationInfo()
   }
-  await fetchCourseAndLocationInfo()
+  script.onerror = () => {
+    console.error('高德地图 API 加载失败')
+    locationStatus.value = '高德地图 API 加载失败'
+    locationStatusType.value = 'error'
+  }
+  document.head.appendChild(script)
 })
 
 // 组件卸载时关闭摄像头
