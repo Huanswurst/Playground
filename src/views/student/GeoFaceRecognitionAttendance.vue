@@ -57,7 +57,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader' // 导入高德地图加载器
-  
+
 // 高德地图密钥和安全密钥
 const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9' // 你的高德地图 API Key
 const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d' // 你的高德地图安全密钥
@@ -89,6 +89,7 @@ const getLocationByAMap = (AMap) => {
     const geolocation = new AMap.Geolocation({
       enableHighAccuracy: true, // 是否使用高精度定位
       timeout: 5000, // 超时时间
+      showButton: false, // 是否显示定位按钮
     })
 
     geolocation.getCurrentPosition((status, result) => {
@@ -97,160 +98,11 @@ const getLocationByAMap = (AMap) => {
         userLocation.value = { latitude, longitude }
         resolve({ latitude, longitude })
       } else {
-    console.error('定位失败，错误信息：', result);
+        console.error('获取位置失败:', result) // 打印完整的错误信息
+        reject(new Error(`获取位置失败: ${result.message}`))
       }
     })
   })
-}
-
-// 获取课程信息和允许的地理位置范围
-const fetchCourseAndLocationInfo = async () => {
-  try {
-    const token = localStorage.getItem('token')
-    const [courseResponse, locationResponse] = await Promise.all([
-      fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.courses}`, {
-        headers: {
-          Authorization: `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }),
-      fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.location}`, {
-        headers: {
-          Authorization: `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }),
-    ])
-
-    const [courseData, locationData] = await Promise.all([
-      courseResponse.json(),
-      locationResponse.json(),
-    ])
-
-    courseInfo.value = courseData[0] // 假设学生只有一个当前课程
-    allowedLocation.value = locationData
-  } catch (error) {
-    console.error('获取课程或位置信息失败:', error)
-    locationStatus.value = '获取位置信息失败'
-    locationStatusType.value = 'error'
-  }
-}
-
-// 验证位置是否在允许范围内
-const verifyLocation = () => {
-  if (!allowedLocation.value || !userLocation.value) return
-
-  const distance = calculateDistance(
-    userLocation.value.latitude,
-    userLocation.value.longitude,
-    allowedLocation.value.latitude,
-    allowedLocation.value.longitude
-  )
-
-  if (distance <= allowedLocation.value.radius) {
-    locationStatus.value = '位置验证通过'
-    locationStatusType.value = 'success'
-  } else {
-    locationStatus.value = `当前位置超出允许范围（距离${distance.toFixed(0)}米）`
-    locationStatusType.value = 'error'
-  }
-}
-
-// 计算两点间距离（米）
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371e3 // 地球半径（米）
-  const φ1 = (lat1 * Math.PI) / 180
-  const φ2 = (lat2 * Math.PI) / 180
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180
-
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
-  return R * c
-}
-
-// 启动摄像头
-const startCamera = async () => {
-  try {
-    // 检查浏览器是否支持媒体设备
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error('浏览器不支持摄像头访问')
-    }
-
-    // 检查是否在HTTPS下运行
-    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-      throw new Error('摄像头访问需要HTTPS连接')
-    }
-
-    // 获取媒体流
-    const constraints = {
-      video: { facingMode: isFrontCamera.value ? 'user' : 'environment' },
-    }
-    mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
-    video.value.srcObject = mediaStream.value
-  } catch (error) {
-    console.error('无法访问摄像头:', error)
-    recognitionResult.value = `无法访问摄像头：${error.message}。请确保：
-    1. 使用HTTPS连接
-    2. 授予摄像头权限
-    3. 使用支持WebRTC的现代浏览器`
-  }
-}
-
-// 切换摄像头
-const switchCamera = async () => {
-  if (mediaStream.value) {
-    mediaStream.value.getTracks().forEach((track) => track.stop())
-  }
-  isFrontCamera.value = !isFrontCamera.value
-  await startCamera()
-}
-
-// 开始人脸识别
-const startRecognition = async () => {
-  if (locationStatusType.value !== 'success') {
-    recognitionResult.value = '请先通过位置验证'
-    return
-  }
-
-  try {
-    isLoading.value = true
-    const context = canvas.value.getContext('2d')
-    canvas.value.width = video.value.videoWidth
-    canvas.value.height = video.value.videoHeight
-    context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
-
-    // 提交带地理位置的考勤记录
-    const token = localStorage.getItem('token')
-    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.student.attendance}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Token ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        course_id: courseInfo.value.id,
-        status: 'present',
-        recognition_data: canvas.value.toDataURL(),
-        location: {
-          latitude: userLocation.value.latitude,
-          longitude: userLocation.value.longitude,
-        },
-      }),
-    })
-
-    if (!response.ok) throw new Error('考勤提交失败')
-
-    recognitionResult.value = '识别成功！考勤已记录'
-  } catch (error) {
-    console.error('考勤提交失败:', error)
-    recognitionResult.value = '考勤提交失败，请稍后重试'
-  } finally {
-    isLoading.value = false
-  }
 }
 
 // 组件挂载时启动摄像头、获取位置和课程信息
@@ -272,7 +124,7 @@ onMounted(() => {
         await getLocationByAMap(AMap)
         verifyLocation()
       } catch (error) {
-        locationStatus.value = '获取位置失败'
+        locationStatus.value = error.message // 显示具体的错误信息
         locationStatusType.value = 'error'
         console.error('获取位置失败:', error)
       }
