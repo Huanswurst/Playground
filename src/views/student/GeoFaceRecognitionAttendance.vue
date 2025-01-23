@@ -72,29 +72,30 @@ const allowedLocation = ref(null) // 允许的位置范围
 const isLoading = ref(false) // 加载状态
 const courseInfo = ref(null) // 课程信息
 
-// 获取地理位置
-const getLocation = () => {
-  if (!navigator.geolocation) {
-    locationStatus.value = '浏览器不支持地理位置功能'
-    locationStatusType.value = 'error'
-    return
-  }
+// 使用高德地图获取 IP 定位
+const getLocationByAMap = () => {
+  return new Promise((resolve, reject) => {
+    if (!window.AMap) {
+      reject(new Error('高德地图 API 未加载'))
+      return
+    }
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      userLocation.value = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
+    // 使用高德地图的 IP 定位功能
+    const geolocation = new AMap.Geolocation({
+      enableHighAccuracy: true, // 是否使用高精度定位
+      timeout: 5000, // 超时时间
+    })
+
+    geolocation.getCurrentPosition((status, result) => {
+      if (status === 'complete') {
+        const { latitude, longitude } = result.position
+        userLocation.value = { latitude, longitude }
+        resolve({ latitude, longitude })
+      } else {
+        reject(new Error('获取位置失败'))
       }
-      verifyLocation()
-    },
-    (error) => {
-      locationStatus.value = '无法获取位置信息'
-      locationStatusType.value = 'error'
-      console.error('获取位置失败:', error)
-    },
-    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-  )
+    })
+  })
 }
 
 // 获取课程信息和允许的地理位置范围
@@ -248,10 +249,17 @@ const startRecognition = async () => {
 }
 
 // 组件挂载时启动摄像头、获取位置和课程信息
-onMounted(() => {
-  startCamera()
-  getLocation()
-  fetchCourseAndLocationInfo()
+onMounted(async () => {
+  await startCamera()
+  try {
+    await getLocationByAMap()
+    verifyLocation()
+  } catch (error) {
+    locationStatus.value = '获取位置失败'
+    locationStatusType.value = 'error'
+    console.error('获取位置失败:', error)
+  }
+  await fetchCourseAndLocationInfo()
 })
 
 // 组件卸载时关闭摄像头
