@@ -1,40 +1,35 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 
-class Class(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    
-    def __str__(self):
-        return self.name
+class User(AbstractUser):
+    is_student = models.BooleanField(default=False)
+    is_teacher = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
 
 class Course(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE)
-    classes = models.ManyToManyField(Class)
-    
-    def __str__(self):
-        return self.name
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=20, unique=True)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    allowed_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
 
-class Student(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    student_id = models.CharField(max_length=20, unique=True)
-    classes = models.ManyToManyField(Class)
-    
     def __str__(self):
-        return f"{self.user.first_name} {self.user.last_name}"
+        return f"{self.code} - {self.name}"
 
-class Teacher(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    teacher_id = models.CharField(max_length=20, unique=True)
-    
+class Class(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='classes')
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
     def __str__(self):
-        return f"{self.user.first_name} {self.user.last_name}"
+        return f"{self.course.code} - {self.date}"
 
 class Attendance(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances')
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    class_session = models.ForeignKey(Class, on_delete=models.CASCADE)
     date = models.DateField()
     time = models.TimeField()
     status = models.CharField(max_length=20, choices=[
@@ -43,7 +38,7 @@ class Attendance(models.Model):
         ('late', 'Late')
     ])
     recognition_data = models.JSONField(null=True, blank=True)
-    location_data = models.JSONField(null=True, blank=True)
+    location = models.JSONField(null=True, blank=True)
     
     class Meta:
         unique_together = ('student', 'course', 'date')
@@ -55,22 +50,11 @@ class Attendance(models.Model):
     def __str__(self):
         return f"{self.student} - {self.course} - {self.date} {self.time}"
 
-class FaceRecognitionData(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    face_encoding = models.BinaryField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        unique_together = ('student',)
-    
-    def __str__(self):
-        return f"{self.student} - Face Data"
+class Location(models.Model):
+    name = models.CharField(max_length=255)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    radius = models.PositiveIntegerField(help_text="Radius in meters")
 
-class SystemSettings(models.Model):
-    key = models.CharField(max_length=100, unique=True)
-    value = models.JSONField()
-    description = models.TextField(blank=True)
-    
     def __str__(self):
-        return f"{self.key} - {self.value}"
+        return f"{self.name} ({self.latitude}, {self.longitude})"

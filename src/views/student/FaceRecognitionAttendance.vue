@@ -43,6 +43,7 @@
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 import { ref, onBeforeUnmount } from 'vue'
 
+const video = ref(null)
 const mediaStream = ref(null)
 const isFrontCamera = ref(false)
 const recognitionResult = ref("")
