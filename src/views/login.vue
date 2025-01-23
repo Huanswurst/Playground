@@ -31,6 +31,8 @@
   </el-container>
   <el-footer class="footer">
     <div class="footer-content">
+      <span>基于图像识别的考勤系统 © 2025</span>
+      <el-divider direction="vertical" />
       <el-link 
         href="https://beian.miit.gov.cn" 
         target="_blank"
