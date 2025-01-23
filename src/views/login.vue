@@ -5,9 +5,9 @@
       <el-form :model="loginForm" :rules="rules" ref="loginFormRef">
         <el-form-item label="角色" prop="role">
           <el-radio-group v-model="loginForm.role">
-            <el-radio value="student">学生</el-radio>
-            <el-radio value="teacher">教师</el-radio>
-            <el-radio value="admin">管理员</el-radio>
+            <el-radio label="student">学生</el-radio>
+            <el-radio label="teacher">教师</el-radio>
+            <el-radio label="admin">管理员</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="用户名" prop="username">
@@ -30,17 +30,17 @@
       </el-form>
     </el-card>
   </el-container>
-<el-footer class="footer">
-  <div class="footer-content">
-    <el-link 
-      href="https://beian.miit.gov.cn" 
-      target="_blank"
-      type="primary"
-    >
-      苏ICP备2025157736号-1
-    </el-link>
-  </div>
-</el-footer>
+  <el-footer class="footer">
+    <div class="footer-content">
+      <el-link 
+        href="https://beian.miit.gov.cn" 
+        target="_blank"
+        type="primary"
+      >
+        苏ICP备2025157736号-1
+      </el-link>
+    </div>
+  </el-footer>
 </template>
 
 <style scoped>
@@ -51,9 +51,6 @@
   text-align: center;
   padding: 10px 0;
   background-color: #f5f7fa;
-}
-.footer-content {
-  margin: 0 auto;
 }
 </style>
 

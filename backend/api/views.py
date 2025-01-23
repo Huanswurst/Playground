@@ -6,9 +6,6 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth import authenticate, login, logout
 from .models import *
 from .serializers import *
-from django.core.files.base import ContentFile
-import base64
-import json
 
 # Authentication views
 @api_view(['POST'])
@@ -49,63 +46,12 @@ def logout_view(request):
     logout(request)
     return Response(status=status.HTTP_204_NO_CONTENT)
 
-# Face Recognition APIs
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def upload_face_data(request):
-    try:
-        student = Student.objects.get(user=request.user)
-        face_data = request.data.get('face_encoding')
-        
-        if not face_data:
-            return Response({'error': 'Face encoding is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        FaceRecognitionData.objects.update_or_create(
-            student=student,
-            defaults={'face_encoding': base64.b64decode(face_data)}
-        )
-        return Response({'status': 'success'}, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-# Attendance APIs
-class AttendanceViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+# Admin views
+class AttendanceManagementViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = Attendance.objects.all()
     serializer_class = AttendanceSerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'teacher'):
-            return Attendance.objects.filter(course__teacher=user.teacher)
-        elif hasattr(user, 'student'):
-            return Attendance.objects.filter(student=user.student)
-        return Attendance.objects.none()
-
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        if hasattr(request.user, 'student'):
-            data['student'] = request.user.student.id
-            
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-# System Settings APIs
-class SystemSettingsViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdminUser]
-    serializer_class = SystemSettingsSerializer
-    queryset = SystemSettings.objects.all()
-
-    def get_queryset(self):
-        key = self.request.query_params.get('key', None)
-        if key:
-            return self.queryset.filter(key=key)
-        return self.queryset
-
-# Admin Management Views
 class ClassManagementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     queryset = Class.objects.all()
@@ -125,6 +71,21 @@ class TeacherManagementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     queryset = Teacher.objects.all()
     serializer_class = TeacherSerializer
+
+# Teacher views
+class TeacherCourseViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CourseSerializer
+
+    def get_queryset(self):
+        return Course.objects.filter(teacher=self.request.user)
+
+class TeacherAttendanceViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AttendanceSerializer
+
+    def get_queryset(self):
+        return Attendance.objects.filter(course__teacher=self.request.user)
 
 # Test API
 @api_view(['GET'])

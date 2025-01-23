@@ -36,41 +36,14 @@ class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date = models.DateField()
-    time = models.TimeField()
     status = models.CharField(max_length=20, choices=[
         ('present', 'Present'),
         ('absent', 'Absent'),
         ('late', 'Late')
     ])
-    recognition_data = models.JSONField(null=True, blank=True)
-    location_data = models.JSONField(null=True, blank=True)
     
     class Meta:
         unique_together = ('student', 'course', 'date')
-        indexes = [
-            models.Index(fields=['student', 'course']),
-            models.Index(fields=['date']),
-        ]
     
     def __str__(self):
-        return f"{self.student} - {self.course} - {self.date} {self.time}"
-
-class FaceRecognitionData(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    face_encoding = models.BinaryField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        unique_together = ('student',)
-    
-    def __str__(self):
-        return f"{self.student} - Face Data"
-
-class SystemSettings(models.Model):
-    key = models.CharField(max_length=100, unique=True)
-    value = models.JSONField()
-    description = models.TextField(blank=True)
-    
-    def __str__(self):
-        return f"{self.key} - {self.value}"
+        return f"{self.student} - {self.course} - {self.date}"

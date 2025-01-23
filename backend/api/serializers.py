@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from .models import Attendance, Class, Course, Student, Teacher, FaceRecognitionData, SystemSettings
+from .models import Attendance, Class, Course, Student, Teacher
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -62,21 +62,4 @@ class AttendanceSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Attendance
-        fields = '__all__'
-        extra_kwargs = {
-            'recognition_data': {'write_only': True},
-            'location_data': {'write_only': True}
-        }
-
-class FaceRecognitionDataSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FaceRecognitionData
-        fields = '__all__'
-        extra_kwargs = {
-            'face_encoding': {'write_only': True}
-        }
-
-class SystemSettingsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SystemSettings
         fields = '__all__'

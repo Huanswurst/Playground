@@ -1,28 +1,22 @@
-import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from 'vite';
-import VueDevTools from 'vite-plugin-vue-devtools';
-import vue from '@vitejs/plugin-vue';
-import fs from 'fs'; // 导入 fs 模块
-import path from 'path'; // 导入 path 模块
+import { fileURLToPath, URL } from 'node:url'
 
-// https://vite.dev/config/s
+import { defineConfig } from 'vite'
+import VueDevTools from 'vite-plugin-vue-devtools'
+import vue from '@vitejs/plugin-vue'
+
+// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     VueDevTools(),
-    vue(),
+    vue()
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
-server: {
-  host: '0.0.0.0', // 允许外部访问
-  port: 5173, // 使用 HTTP 端口
-  hmr: {
-    host: 'localhost',
-    port: 5173,
-    protocol: 'ws'
-  }
-},
-});
+  server: {
+    port: 5173, // 更换为 8080 或其他高端口
+    host: '0.0.0.0', // 允许外部访问
+  },
+})

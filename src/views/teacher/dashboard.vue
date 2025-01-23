@@ -39,6 +39,15 @@
           <el-menu-item index="3-3" route="/teacher/student/communication">沟通记录</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu index="4">
+          <template #title>
+            <el-icon><data-line /></el-icon>
+            <span>成绩管理</span>
+          </template>
+          <el-menu-item index="4-1" route="/teacher/grade/input">成绩录入</el-menu-item>
+          <el-menu-item index="4-2" route="/teacher/grade/analysis">成绩分析</el-menu-item>
+          <el-menu-item index="4-3" route="/teacher/grade/report">成绩报告</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     
