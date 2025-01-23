@@ -99,34 +99,7 @@ export default {
       location: '/api/v1/student/location/',
       courses: '/api/v1/student/courses/',
       faceRecognition: '/api/v1/student/face-recognition/'
-=======
-export default {
-  apiBaseUrl: process.env.NODE_ENV === 'production' 
-    ? 'https://www.huanswurst.top:5173' 
-    : 'http://localhost:8000',
-  
-  // AMAP configuration
-  amapKey: import.meta.env.VITE_AMAP_KEY,
-  amapSecurityKey: import.meta.env.VITE_AMAP_SECURITY_KEY,
-  
-  // API endpoints
-  apiEndpoints: {
-    admin: {
-      attendance: '/api/admin/attendance/',
-      classes: '/api/admin/classes/',
-      courses: '/api/admin/courses/',
-      students: '/api/admin/students/',
-      teachers: '/api/admin/teachers/'
-    },
-    teacher: {
-      courses: '/api/teacher/courses/',
-      attendance: '/api/teacher/attendance/'
-    },
-    student: {
-      attendance: '/api/student/attendance/',
-      location: '/api/student/location/',
-      courses: '/api/student/courses/'
->>>>>>> 4d46f07 (添加高德地图安全密钥，优化用户模型，更新考勤和课程相关逻辑，新增底部组件)
+
     }
   }
 }
