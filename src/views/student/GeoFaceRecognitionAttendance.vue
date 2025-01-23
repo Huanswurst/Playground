@@ -56,7 +56,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
-
+import AMapLoader from '@amap/amap-jsapi-loader' // 导入高德地图加载器
+  
 // 高德地图密钥和安全密钥
 const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9' // 你的高德地图 API Key
 const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d' // 你的高德地图安全密钥
