@@ -73,9 +73,11 @@
 
 <script setup>
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
+import config from '@/config.js'
 import { ref, onBeforeUnmount, onMounted } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
+const video = ref(null)
 const mediaStream = ref(null)
 const isFrontCamera = ref(false)
 const recognitionResult = ref("")
@@ -88,37 +90,45 @@ const allowedLocation = ref(null)
 const map = ref(null)
 
 // 初始化地图
-const initMap = async () => {
-  try {
-    const AMap = await AMapLoader.load({
-      key: import.meta.env.VITE_AMAP_KEY,
-      version: '2.0',
-      plugins: ['AMap.Geolocation']
-    })
+    const initMap = async () => {
+      try {
+        // Set security config first
+        window._AMapSecurityConfig = {
+          securityJsCode: config.amapSecurityKey
+        }
 
-    map.value = new AMap.Map('map-container', {
-      zoom: 15,
-      resizeEnable: true
-    })
+        const AMap = await AMapLoader.load({
+          key: config.amapKey,
+          version: '2.0',
+          plugins: ['AMap.Geolocation', 'AMap.Scale']
+        })
 
-    // 添加定位控件
-    const geolocation = new AMap.Geolocation({
-      enableHighAccuracy: true,
-      timeout: 20000,  // 延长超时时间
-      maximumAge: 0,
-      showMarker: true,
-      showCircle: true,
-      panToLocation: true,
-      convert: true,
-      extensions: 'all',
-      GeoLocationFirst: true,
-      noIpLocate: true, // 禁用IP定位
-      noGeoLocation: false,
-      useNative: true,  // 强制使用原生定位
-      showButton: false // 隐藏默认定位按钮
-    })
+        map.value = new AMap.Map('map-container', {
+          zoom: 15,
+          resizeEnable: true,
+          viewMode: '3D'
+        })
 
-    map.value.addControl(geolocation)
+        // Add scale control
+        map.value.addControl(new AMap.Scale())
+
+        // Add geolocation control with better error handling
+        const geolocation = new AMap.Geolocation({
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0,
+          showMarker: true,
+          showCircle: true,
+          panToLocation: true,
+          convert: true,
+          GeoLocationFirst: true,
+          noIpLocate: true,
+          noGeoLocation: false,
+          useNative: true,
+          showButton: false
+        })
+
+        map.value.addControl(geolocation)
     
     // 增加定位重试机制
     let retryCount = 0
@@ -170,43 +180,54 @@ const getLocation = () => {
   const maxRetries = 3
   
   const tryGetLocation = () => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (position.coords.accuracy < 50) {
-          userLocation.value = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          }
-          verifyLocation()
-        } else if (retryCount < maxRetries) {
-          retryCount++
-          setTimeout(tryGetLocation, 2000)
-        } else {
-          locationStatus.value = "无法获取精确位置"
-          locationStatusType.value = "error"
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      if (position.coords.accuracy < 50) {
+        userLocation.value = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
         }
-      },
-      (error) => {
-        if (retryCount < maxRetries) {
-          retryCount++
-          setTimeout(tryGetLocation, 2000)
-        } else {
-          locationStatus.value = "无法获取位置信息"
-          locationStatusType.value = "error"
-          console.error("获取位置失败:", error)
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 20000,  // 延长超时时间
-        maximumAge: 0,
-        desiredAccuracy: 10,  // 期望精度10米
-        requireAltitude: false,
-        requireHeading: false,
-        requireSpeed: false
+        verifyLocation()
+      } else if (retryCount < maxRetries) {
+        retryCount++
+        setTimeout(tryGetLocation, 2000)
+      } else {
+        locationStatus.value = "无法获取精确位置"
+        locationStatusType.value = "error"
       }
-    )
-  }
+    },
+    (error) => {
+      if (error.code === error.PERMISSION_DENIED) {
+        locationStatus.value = "位置权限被拒绝，请开启权限"
+        locationStatusType.value = "error"
+      } else if (error.code === error.POSITION_UNAVAILABLE) {
+        locationStatus.value = "无法获取位置信息，请检查设备定位服务"
+        locationStatusType.value = "error"
+      } else if (error.code === error.TIMEOUT) {
+        locationStatus.value = "获取位置超时，请重试"
+        locationStatusType.value = "error"
+      }
+
+      if (retryCount < maxRetries) {
+        retryCount++
+        setTimeout(tryGetLocation, 2000)
+      } else {
+        locationStatus.value = "无法获取位置信息"
+        locationStatusType.value = "error"
+        console.error("获取位置失败:", error)
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 30000,  // 进一步延长超时时间
+      maximumAge: 0,
+      desiredAccuracy: 50,  // 降低精度要求
+      requireAltitude: false,
+      requireHeading: false,
+      requireSpeed: false
+    }
+  )
+}
   
   tryGetLocation()
 }

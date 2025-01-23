@@ -1,3 +1,4 @@
+
 import axios from 'axios'
 import store from './store'
 
@@ -98,6 +99,7 @@ export default {
       location: '/api/v1/student/location/',
       courses: '/api/v1/student/courses/',
       faceRecognition: '/api/v1/student/face-recognition/'
+
     }
   }
 }
