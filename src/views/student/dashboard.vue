@@ -29,16 +29,6 @@
           <el-menu-item index="2-3" route="/student/course/assignments">作业提交</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="3">
-          <template #title>
-            <el-icon><data-line /></el-icon>
-            <span>成绩查询</span>
-          </template>
-          <el-menu-item index="3-1" route="/student/grade/current">本学期成绩</el-menu-item>
-          <el-menu-item index="3-2" route="/student/grade/history">历史成绩</el-menu-item>
-          <el-menu-item index="3-3" route="/student/grade/analysis">成绩分析</el-menu-item>
-        </el-sub-menu>
-
         <el-sub-menu index="4">
           <template #title>
             <el-icon><user /></el-icon>
@@ -110,7 +100,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Expand, Fold } from '@element-plus/icons-vue'
-import { Calendar, Notebook, DataLine, User } from '@element-plus/icons-vue'
+import { Calendar, Notebook, User } from '@element-plus/icons-vue'
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {

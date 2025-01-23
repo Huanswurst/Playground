@@ -158,6 +158,16 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 // 启动摄像头
 const startCamera = async () => {
   try {
+    // 检查浏览器是否支持mediaDevices
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('浏览器不支持摄像头访问')
+    }
+
+    // 检查页面是否通过HTTPS加载
+    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+      throw new Error('摄像头访问需要HTTPS连接')
+    }
+
     const constraints = {
       video: { facingMode: isFrontCamera.value ? "user" : "environment" },
     }
@@ -165,7 +175,10 @@ const startCamera = async () => {
     video.value.srcObject = mediaStream.value
   } catch (error) {
     console.error("无法访问摄像头:", error)
-    recognitionResult.value = "无法访问摄像头，请检查权限。"
+    recognitionResult.value = `无法访问摄像头：${error.message}。请确保：
+    1. 使用HTTPS连接
+    2. 授予摄像头权限
+    3. 使用支持WebRTC的现代浏览器`
   }
 }
 
