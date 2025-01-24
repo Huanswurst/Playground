@@ -23,7 +23,6 @@
           <!-- 地图容器 -->
           <div class="map-container">
             <div class="map-overlay" ref="mapContainer">
-            <div id="panel" :style="panelStyle"></div>
               <div v-if="isMapLoading" class="map-loading">
                 <span class="map-loading-text">地图加载中...</span>
               </div>
@@ -89,19 +88,6 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
-// 添加地点搜索面板样式
-const panelStyle = `
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 300px;
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  z-index: 100;
-`
-
 const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9'
 const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d'
 
@@ -149,7 +135,11 @@ const getLocationByAMap = (AMap) => {
         strokeWeight: 1,
         fillColor: '#02B0FF',
         fillOpacity: 0.25
-      }
+      },
+      panToLocation: true, // 定位到当前位置时，地图平移到该点
+      zoomToAccuracy: true, // 定位成功后调整地图视野范围使定位位置及精度范围视野内可见
+      noGeoLocation: 0, // 是否禁止使用浏览器定位
+      animation: false // 关闭定位动画
     })
 
     // 添加定位控件
