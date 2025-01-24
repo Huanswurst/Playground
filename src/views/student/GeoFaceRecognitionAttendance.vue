@@ -108,235 +108,172 @@ const isMapLoading = ref(true)
 const cameraError = ref('')
 
 const map = ref(null)
+const marker = ref(null)
 
-const getLocationByAMap = (AMap) => {
-  // 先尝试浏览器IP定位
+// 计算两个坐标之间的距离（单位：米）
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3 // 地球半径
+  const φ1 = (lat1 * Math.PI) / 180
+  const φ2 = (lat2 * Math.PI) / 180
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+  return R * c
+}
+
+// 获取浏览器定位
+const getBrowserLocation = () => {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      resolve(null)
-      return
+      locationStatus.value = '您的设备不支持定位功能'
+      locationStatusType.value = 'error'
+      return resolve(null)
     }
-    
-    // 使用浏览器原生定位API
+
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        })
+      (position) => resolve({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        source: 'browser'
+      }),
+      (error) => {
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            locationStatus.value = '请开启定位权限'
+            break;
+          case error.POSITION_UNAVAILABLE:
+            locationStatus.value = '无法获取位置信息'
+            break;
+          case error.TIMEOUT:
+            locationStatus.value = '定位请求超时'
+            break;
+          default:
+            locationStatus.value = '定位失败，请重试'
+        }
+        locationStatusType.value = 'error'
+        resolve(null)
       },
-      () => resolve(null), // 定位失败返回null
       {
         enableHighAccuracy: true,
-        timeout: 2000,
-        maximumAge: 30000
+        timeout: 5000,
+        maximumAge: 0
       }
     )
-  }).then((ipLocation) => {
-    if (ipLocation) {
-      return ipLocation
-    }
-    
-    // 如果IP定位失败，使用高德定位
-    return new Promise((resolve, reject) => {
-      if (!AMap || !AMap.Geolocation) {
-        reject(new Error('高德地图 API 未加载或版本不兼容'))
-        return
-      }
-
-      const geolocation = new AMap.Geolocation({
-        enableHighAccuracy: true,
-        timeout: 2000,  // 缩短超时时间
-        maximumAge: 30000,  // 使用缓存位置
-        showButton: true,  // 显示定位按钮
-        position: 'RB',
-        offset: [10, 20],
-        showMarker: true,
-        buttonPosition: 'RB',
-        buttonOffset: new AMap.Pixel(10, 50), // 调整按钮位置
-        buttonDom: '<button class="amap-geo-btn" style="background: #409eff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">定位</button>', // 自定义按钮样式
-        markerOptions: {
-          offset: new AMap.Pixel(-18, -36),
-          content: '<img src="https://a.amap.com/jsapi_demos/static/resource/img/user.png" style="width:36px;height:36px"/>'
-        },
-        showCircle: true,
-        circleOptions: {
-          strokeColor: '#0093FF',
-          noSelect: true,
-          strokeOpacity: 0.5,
-          strokeWeight: 1,
-          fillColor: '#02B0FF',
-          fillOpacity: 0.25
-        },
-        panToLocation: true,
-        zoomToAccuracy: true,
-        noGeoLocation: 0,
-        animation: false
-      })
-
-    map.value.addControl(geolocation)
-
-    geolocation.watchPosition((status, result) => {
-      if (status === 'complete') {
-        const { latitude, longitude } = result.position
-        
-        userLocation.value = { latitude, longitude }
-        
-        // 确保地图实例存在
-        if (map.value && typeof map.value.setCenter === 'function') {
-          const center = [longitude, latitude]
-          map.value.setCenter(center)
-          map.value.setZoom(17)
-        }
-        
-        resolve({ latitude, longitude })
-      } else {
-        console.error('获取位置失败:', result)
-        reject(new Error(`获取位置失败: ${result.message}`))
-      }
-    })
-  })
   })
 }
 
-const initMap = (AMap) => {
+// 获取高德定位
+const getAMapLocation = (AMap) => {
   return new Promise((resolve) => {
-    // 设置默认中心点为上海
-    const defaultCenter = [121.473701, 31.230416]
-    
-    map.value = new AMap.Map(mapContainer.value, {
-      zoom: 17,
-      center: defaultCenter,
-      viewMode: '2D',
-      resizeEnable: true,
-      zoomEnable: true,
-      dragEnable: true,
-      doubleClickZoom: false,
-      keyboardEnable: false,
-      rotateEnable: false,
-      pitchEnable: false,
-      showLabel: true,
-      mapStyle: 'amap://styles/normal',
-      features: ['bg', 'road', 'point', 'building'],
+    const geolocation = new AMap.Geolocation({
+      enableHighAccuracy: true,
+      timeout: 5000,
+      showMarker: true,
+      showCircle: true
     })
-    
-    map.value.addControl(new AMap.ToolBar({
-      position: 'RB',
-      zoomPosition: false
-    }))
 
-    isMapLoading.value = false
-    resolve(map.value)
+    geolocation.getCurrentPosition((status, result) => {
+      if (status === 'complete') {
+        resolve({
+          latitude: result.position.lat,
+          longitude: result.position.lng,
+          source: 'amap'
+        })
+      } else {
+        resolve(null)
+      }
+    })
   })
 }
 
-const startCamera = async () => {
-  try {
-    const constraints = {
-      video: {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        facingMode: isFrontCamera.value ? 'user' : 'environment',
-      },
-    }
-    mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
-    video.value.srcObject = mediaStream.value
-  } catch (error) {
-    console.error('摄像头启动失败:', error)
-    if (error.name === 'NotAllowedError') {
-      throw new Error('摄像头权限被拒绝，请检查浏览器设置')
-    } else if (error.name === 'NotFoundError') {
-      throw new Error('未找到摄像头设备')
-    } else {
-      throw new Error('无法访问摄像头，请检查设备设置')
-    }
+// 双重校验定位
+const validateLocation = async (browserLoc, amapLoc) => {
+  if (!browserLoc || !amapLoc) {
+    locationStatus.value = '定位校验失败：缺少定位数据'
+    locationStatusType.value = 'error'
+    return false
   }
-}
 
-const switchCamera = async () => {
-  isFrontCamera.value = !isFrontCamera.value
-  if (mediaStream.value) {
-    mediaStream.value.getTracks().forEach((track) => track.stop())
+  const distance = calculateDistance(
+    browserLoc.latitude,
+    browserLoc.longitude,
+    amapLoc.latitude,
+    amapLoc.longitude
+  )
+
+  // 允许误差范围：100米
+  if (distance > 100) {
+    locationStatus.value = `定位校验失败：定位偏差过大（${distance.toFixed(2)}米）`
+    locationStatusType.value = 'error'
+    return false
   }
-  await startCamera()
-}
 
-const startRecognition = () => {
-  recognitionResult.value = '识别成功'
-}
-
-const verifyLocation = () => {
-  locationStatus.value = '位置验证通过'
+  locationStatus.value = '定位校验成功'
   locationStatusType.value = 'success'
+  return true
 }
 
-const fetchCourseAndLocationInfo = async () => {
-  isLoading.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    courseInfo.value = { name: '课程名称', location: { latitude: 39.90923, longitude: 116.397428 } }
-    allowedLocation.value = { latitude: 39.90923, longitude: 116.397428 }
-  } catch (error) {
-    console.error('获取课程信息失败:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const retryCamera = async () => {
-  cameraError.value = ''
-  try {
-    await startCamera()
-  } catch (error) {
-    cameraError.value = error.message
-  }
-}
-
-onMounted(async () => {
-  window._AMapSecurityConfig = {
-    securityJsCode: AMAP_SECRET,
-  }
-
+const initAMap = async () => {
   try {
     const AMap = await AMapLoader.load({
       key: AMAP_KEY,
       version: '2.0',
-      plugins: ['AMap.Geolocation', 'AMap.ToolBar', 'AMap.Scale'],
+      plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
 
-    await initMap(AMap)
-
-    const location = await getLocationByAMap(AMap)
-    map.value.setCenter([location.longitude, location.latitude])
-    map.value.setZoom(17)
-    
-    new AMap.Marker({
-      position: [location.longitude, location.latitude],
-      title: '我的位置',
-      map: map.value
+    // 初始化地图
+    map.value = new AMap.Map(mapContainer.value, {
+      zoom: 16,
+      resizeEnable: true
     })
 
-    verifyLocation()
-    await fetchCourseAndLocationInfo()
+    // 同时获取浏览器和高德定位
+    const [browserLoc, amapLoc] = await Promise.all([
+      getBrowserLocation(),
+      getAMapLocation(AMap)
+    ])
+
+    // 校验定位
+    const isValid = await validateLocation(browserLoc, amapLoc)
+
+    if (isValid) {
+      // 使用高德定位结果
+      const center = [amapLoc.longitude, amapLoc.latitude]
+      map.value.setCenter(center)
+      userLocation.value = amapLoc
+
+      // 添加标记点
+      marker.value = new AMap.Marker({
+        position: center,
+        icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png',
+        offset: new AMap.Pixel(-13, -30)
+      })
+      marker.value.setMap(map.value)
+    }
+
+    isMapLoading.value = false
   } catch (error) {
-    console.error('地图或位置初始化失败:', error)
-    locationStatus.value = '地图或位置初始化失败'
+    console.error('地图加载失败:', error)
+    locationStatus.value = '地图加载失败'
     locationStatusType.value = 'error'
   }
+}
 
-  try {
-    await startCamera()
-  } catch (error) {
-    cameraError.value = error.message
-  }
+onMounted(() => {
+  initAMap()
 })
 
 onBeforeUnmount(() => {
-  if (mediaStream.value) {
-    mediaStream.value.getTracks().forEach((track) => track.stop())
-  }
   if (map.value) {
     map.value.destroy()
+  }
+  if (marker.value) {
+    marker.value.setMap(null)
   }
 })
 </script>
