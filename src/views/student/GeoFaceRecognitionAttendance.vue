@@ -119,15 +119,15 @@ const getLocationByAMap = (AMap) => {
     const geolocation = new AMap.Geolocation({
       enableHighAccuracy: true,
       timeout: 5000,
-      showButton: true, // 显示定位按钮
-      position: 'RB', // 定位按钮在右下角
-      offset: [10, 20], // 按钮偏移量
-      showMarker: true, // 显示定位点
+      showButton: true,
+      position: 'RB',
+      offset: [10, 20],
+      showMarker: true,
       markerOptions: {
         offset: new AMap.Pixel(-18, -36),
         content: '<img src="https://a.amap.com/jsapi_demos/static/resource/img/user.png" style="width:36px;height:36px"/>'
       },
-      showCircle: true, // 显示精度圈
+      showCircle: true,
       circleOptions: {
         strokeColor: '#0093FF',
         noSelect: true,
@@ -136,23 +136,30 @@ const getLocationByAMap = (AMap) => {
         fillColor: '#02B0FF',
         fillOpacity: 0.25
       },
-      panToLocation: true, // 定位到当前位置时，地图平移到该点
-      zoomToAccuracy: true, // 定位成功后调整地图视野范围使定位位置及精度范围视野内可见
-      noGeoLocation: 0, // 是否禁止使用浏览器定位
-      animation: false // 关闭定位动画
+      panToLocation: true,
+      zoomToAccuracy: true,
+      noGeoLocation: 0,
+      animation: false
     })
 
-    // 添加定位控件
     map.value.addControl(geolocation)
 
-    // 实时定位
     geolocation.watchPosition((status, result) => {
       if (status === 'complete') {
         const { latitude, longitude } = result.position
+        
+        // 验证坐标有效性
+        if (isNaN(latitude) || isNaN(longitude)) {
+          throw new Error('获取的坐标无效')
+        }
+        
         userLocation.value = { latitude, longitude }
         
         // 更新地图中心
-        map.value.setCenter([longitude, latitude])
+        const center = [longitude, latitude]
+        if (center.every(coord => !isNaN(coord))) {
+          map.value.setCenter(center)
+        }
         
         resolve({ latitude, longitude })
       } else {
@@ -165,8 +172,12 @@ const getLocationByAMap = (AMap) => {
 
 const initMap = (AMap) => {
   return new Promise((resolve) => {
+    // 设置默认中心点为上海
+    const defaultCenter = [121.473701, 31.230416]
+    
     map.value = new AMap.Map(mapContainer.value, {
       zoom: 17,
+      center: defaultCenter,
       viewMode: '2D',
       resizeEnable: true,
       zoomEnable: true,
@@ -180,13 +191,11 @@ const initMap = (AMap) => {
       features: ['bg', 'road', 'point', 'building'],
     })
     
-    // 添加工具条控件（去掉缩放按钮）
     map.value.addControl(new AMap.ToolBar({
       position: 'RB',
       zoomPosition: false
     }))
 
-    
     isMapLoading.value = false
     resolve(map.value)
   })
@@ -224,21 +233,17 @@ const switchCamera = async () => {
 }
 
 const startRecognition = () => {
-  // 这里添加人脸识别逻辑
   recognitionResult.value = '识别成功'
 }
 
 const verifyLocation = () => {
-  // 这里添加位置验证逻辑
   locationStatus.value = '位置验证通过'
   locationStatusType.value = 'success'
 }
 
 const fetchCourseAndLocationInfo = async () => {
-  // 这里添加获取课程和位置信息的逻辑
   isLoading.value = true
   try {
-    // 模拟异步请求
     await new Promise((resolve) => setTimeout(resolve, 1000))
     courseInfo.value = { name: '课程名称', location: { latitude: 39.90923, longitude: 116.397428 } }
     allowedLocation.value = { latitude: 39.90923, longitude: 116.397428 }
@@ -264,32 +269,25 @@ onMounted(async () => {
   }
 
   try {
-    // 加载高德地图
     const AMap = await AMapLoader.load({
       key: AMAP_KEY,
       version: '2.0',
       plugins: ['AMap.Geolocation', 'AMap.ToolBar', 'AMap.Scale'],
     })
 
-    // 初始化地图
     await initMap(AMap)
 
-    // 获取地理位置并设置为中心点
     const location = await getLocationByAMap(AMap)
     map.value.setCenter([location.longitude, location.latitude])
     map.value.setZoom(17)
     
-    // 添加当前位置标记
     new AMap.Marker({
       position: [location.longitude, location.latitude],
       title: '我的位置',
       map: map.value
     })
 
-    // 验证位置
     verifyLocation()
-
-    // 获取课程信息
     await fetchCourseAndLocationInfo()
   } catch (error) {
     console.error('地图或位置初始化失败:', error)
@@ -297,7 +295,6 @@ onMounted(async () => {
     locationStatusType.value = 'error'
   }
 
-  // 启动摄像头（独立处理，不影响地图和位置逻辑）
   try {
     await startCamera()
   } catch (error) {
