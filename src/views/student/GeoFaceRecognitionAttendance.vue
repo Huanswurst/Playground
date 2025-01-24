@@ -16,8 +16,13 @@
           <!-- 视频元素 -->
           <div class="camera-container">
             <video ref="video" autoplay playsinline class="camera-video"></video>
-            <!-- 地图容器 -->
+          </div>
+          <!-- 独立的地图容器 -->
+          <div class="map-container">
             <div ref="mapContainer" class="map-overlay"></div>
+            <div v-if="isMapLoading" class="map-loading">
+              <span class="map-loading-text">地图加载中...</span>
+            </div>
           </div>
           <!-- 画布元素，用于捕获图像 -->
           <canvas ref="canvas" style="display: none;"></canvas>
@@ -81,6 +86,7 @@ const userLocation = ref(null) // 用户当前位置
 const allowedLocation = ref(null) // 允许的位置范围
 const isLoading = ref(false) // 加载状态
 const courseInfo = ref(null) // 课程信息
+const isMapLoading = ref(true) // 地图加载状态
 
 // 使用高德地图获取 IP 定位
 const getLocationByAMap = (AMap) => {
@@ -131,6 +137,7 @@ const initMap = (AMap) => {
       mapStyle: 'amap://styles/normal',
       features: ['bg', 'road', 'point'],
     })
+    isMapLoading.value = false
     resolve(map.value)
   })
 }
@@ -150,19 +157,21 @@ onMounted(() => {
   })
     .then(async (AMap) => {
       await startCamera()
-      await initMap(AMap)
       try {
+        await initMap(AMap)
         const location = await getLocationByAMap(AMap)
         map.value.setCenter([location.longitude, location.latitude])
         verifyLocation()
+        await fetchCourseAndLocationInfo()
       } catch (error) {
+        isMapLoading.value = false
         locationStatus.value = error.message // 显示具体的错误信息
         locationStatusType.value = 'error'
-        console.error('获取位置失败:', error)
+        console.error('地图加载失败:', error)
       }
-      await fetchCourseAndLocationInfo()
     })
     .catch((error) => {
+      isMapLoading.value = false
       console.error('高德地图加载失败:', error)
       locationStatus.value = '高德地图加载失败'
       locationStatusType.value = 'error'
@@ -301,16 +310,59 @@ onBeforeUnmount(() => {
   margin-bottom: 20px;
 }
 
+.map-container {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 640px;
+  margin: 20px auto;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
 .map-overlay {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 30%;
-  height: 200px;
+  width: 100%;
+  height: 300px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.map-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  z-index: 1;
+}
+
+.map-loading-text {
+  color: #409eff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+@media screen and (max-width: 768px) {
+  .map-container {
+    margin: 10px auto;
+  }
+  
+  .map-overlay {
+    height: 250px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .map-overlay {
+    height: 200px;
+  }
 }
 
 .camera-controls {
