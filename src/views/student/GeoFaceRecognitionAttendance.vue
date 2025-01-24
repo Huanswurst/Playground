@@ -39,6 +39,16 @@
               <el-icon><Camera /></el-icon>
               <span>开始识别</span>
             </el-button>
+            <!-- 重试摄像头按钮 -->
+            <el-button
+              v-if="cameraError"
+              type="primary"
+              @click="retryCamera"
+              class="control-button"
+            >
+              <el-icon><Camera /></el-icon>
+              <span>重试摄像头</span>
+            </el-button>
           </div>
         </div>
 
@@ -56,6 +66,15 @@
           v-if="recognitionResult"
           :title="recognitionResult"
           type="success"
+          show-icon
+          class="recognition-result"
+        />
+
+        <!-- 摄像头错误提示 -->
+        <el-alert
+          v-if="cameraError"
+          :title="cameraError"
+          type="error"
           show-icon
           class="recognition-result"
         />
@@ -86,6 +105,7 @@ const allowedLocation = ref(null)
 const isLoading = ref(false)
 const courseInfo = ref(null)
 const isMapLoading = ref(true)
+const cameraError = ref('')
 
 const map = ref(null)
 
@@ -143,21 +163,27 @@ const startCamera = async () => {
       video: {
         width: { ideal: 640 },
         height: { ideal: 480 },
-        facingMode: isFrontCamera.value ? 'user' : 'environment'
-      }
+        facingMode: isFrontCamera.value ? 'user' : 'environment',
+      },
     }
     mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
     video.value.srcObject = mediaStream.value
   } catch (error) {
     console.error('摄像头启动失败:', error)
-    throw new Error('无法访问摄像头，请检查权限设置')
+    if (error.name === 'NotAllowedError') {
+      throw new Error('摄像头权限被拒绝，请检查浏览器设置')
+    } else if (error.name === 'NotFoundError') {
+      throw new Error('未找到摄像头设备')
+    } else {
+      throw new Error('无法访问摄像头，请检查设备设置')
+    }
   }
 }
 
 const switchCamera = async () => {
   isFrontCamera.value = !isFrontCamera.value
   if (mediaStream.value) {
-    mediaStream.value.getTracks().forEach(track => track.stop())
+    mediaStream.value.getTracks().forEach((track) => track.stop())
   }
   await startCamera()
 }
@@ -178,7 +204,7 @@ const fetchCourseAndLocationInfo = async () => {
   isLoading.value = true
   try {
     // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     courseInfo.value = { name: '课程名称', location: { latitude: 39.90923, longitude: 116.397428 } }
     allowedLocation.value = { latitude: 39.90923, longitude: 116.397428 }
   } catch (error) {
@@ -188,35 +214,60 @@ const fetchCourseAndLocationInfo = async () => {
   }
 }
 
+const retryCamera = async () => {
+  cameraError.value = ''
+  try {
+    await startCamera()
+  } catch (error) {
+    cameraError.value = error.message
+  }
+}
+
 onMounted(async () => {
   window._AMapSecurityConfig = {
     securityJsCode: AMAP_SECRET,
   }
 
   try {
+    // 加载高德地图
     const AMap = await AMapLoader.load({
       key: AMAP_KEY,
       version: '2.0',
       plugins: ['AMap.Geolocation'],
     })
 
-    await startCamera()
+    // 初始化地图
     await initMap(AMap)
+
+    // 获取地理位置
     const location = await getLocationByAMap(AMap)
     map.value.setCenter([location.longitude, location.latitude])
+
+    // 验证位置
     verifyLocation()
+
+    // 获取课程信息
     await fetchCourseAndLocationInfo()
   } catch (error) {
-    isMapLoading.value = false
-    locationStatus.value = error.message
+    console.error('地图或位置初始化失败:', error)
+    locationStatus.value = '地图或位置初始化失败'
     locationStatusType.value = 'error'
-    console.error('初始化失败:', error)
+  }
+
+  // 启动摄像头（独立处理，不影响地图和位置逻辑）
+  try {
+    await startCamera()
+  } catch (error) {
+    cameraError.value = error.message
   }
 })
 
 onBeforeUnmount(() => {
   if (mediaStream.value) {
-    mediaStream.value.getTracks().forEach(track => track.stop())
+    mediaStream.value.getTracks().forEach((track) => track.stop())
+  }
+  if (map.value) {
+    map.value.destroy()
   }
 })
 </script>
