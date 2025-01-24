@@ -17,15 +17,17 @@
           <div class="camera-container">
             <video ref="video" autoplay playsinline class="camera-video"></video>
           </div>
-          <!-- 独立的地图容器 -->
+          <!-- 画布元素，用于显示摄像头 -->
+          <canvas ref="canvas" class="camera-canvas"></canvas>
+          
+          <!-- 地图容器 -->
           <div class="map-container">
-            <div ref="mapContainer" class="map-overlay"></div>
-            <div v-if="isMapLoading" class="map-loading">
-              <span class="map-loading-text">地图加载中...</span>
+            <div class="map-overlay" ref="mapContainer">
+              <div v-if="isMapLoading" class="map-loading">
+                <span class="map-loading-text">地图加载中...</span>
+              </div>
             </div>
           </div>
-          <!-- 画布元素，用于捕获图像 -->
-          <canvas ref="canvas" style="display: none;"></canvas>
           <div class="camera-controls">
             <!-- 切换摄像头按钮 -->
             <el-button type="primary" @click="switchCamera" class="control-button">
@@ -142,40 +144,64 @@ const initMap = (AMap) => {
   })
 }
 
+// 启动摄像头
+const startCamera = async () => {
+  try {
+    const constraints = {
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: isFrontCamera.value ? 'user' : 'environment'
+      }
+    }
+    mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
+    video.value.srcObject = mediaStream.value
+  } catch (error) {
+    console.error('摄像头启动失败:', error)
+    throw new Error('无法访问摄像头，请检查权限设置')
+  }
+}
+
 // 组件挂载时启动摄像头、获取位置和课程信息
-onMounted(() => {
+onMounted(async () => {
   // 设置高德地图安全密钥
   window._AMapSecurityConfig = {
     securityJsCode: AMAP_SECRET,
   }
 
-  // 加载高德地图 JS API
-  AMapLoader.load({
-    key: AMAP_KEY,
-    version: '2.0',
-    plugins: ['AMap.Geolocation'], // 需要使用的插件
-  })
-    .then(async (AMap) => {
-      await startCamera()
-      try {
-        await initMap(AMap)
-        const location = await getLocationByAMap(AMap)
-        map.value.setCenter([location.longitude, location.latitude])
-        verifyLocation()
-        await fetchCourseAndLocationInfo()
-      } catch (error) {
+  try {
+    // 加载高德地图 JS API
+    await AMapLoader.load({
+      key: AMAP_KEY,
+      version: '2.0',
+      plugins: ['AMap.Geolocation'], // 需要使用的插件
+    })
+      .then(async (AMap) => {
+        try {
+          await startCamera()
+          await initMap(AMap)
+          const location = await getLocationByAMap(AMap)
+          map.value.setCenter([location.longitude, location.latitude])
+          verifyLocation()
+          await fetchCourseAndLocationInfo()
+        } catch (error) {
+          isMapLoading.value = false
+          locationStatus.value = error.message // 显示具体的错误信息
+          locationStatusType.value = 'error'
+          console.error('地图加载失败:', error)
+        }
+      })
+      .catch((error) => {
         isMapLoading.value = false
-        locationStatus.value = error.message // 显示具体的错误信息
+        console.error('高德地图加载失败:', error)
+        locationStatus.value = '高德地图加载失败'
         locationStatusType.value = 'error'
-        console.error('地图加载失败:', error)
-      }
-    })
-    .catch((error) => {
-      isMapLoading.value = false
-      console.error('高德地图加载失败:', error)
-      locationStatus.value = '高德地图加载失败'
-      locationStatusType.value = 'error'
-    })
+      })
+  } catch (error) {
+    console.error('组件初始化失败:', error)
+    locationStatus.value = '组件初始化失败'
+    locationStatusType.value = 'error'
+  }
 })
 
 // 组件卸载时关闭摄像头
