@@ -14,7 +14,11 @@
       <el-card class="camera-card" shadow="hover">
         <div class="camera-section">
           <!-- 视频元素 -->
-          <video ref="video" autoplay playsinline class="camera-video"></video>
+          <div class="camera-container">
+            <video ref="video" autoplay playsinline class="camera-video"></video>
+            <!-- 地图容器 -->
+            <div ref="mapContainer" class="map-overlay"></div>
+          </div>
           <!-- 画布元素，用于捕获图像 -->
           <canvas ref="canvas" style="display: none;"></canvas>
           <div class="camera-controls">
@@ -65,6 +69,7 @@ const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d' // 你的高德地图安�
 // 摄像头相关
 const video = ref(null) // 视频元素引用
 const canvas = ref(null) // 画布元素引用
+const mapContainer = ref(null) // 地图容器引用
 const mediaStream = ref(null) // 媒体流对象
 const isFrontCamera = ref(false) // 是否使用前置摄像头
 
@@ -105,6 +110,31 @@ const getLocationByAMap = (AMap) => {
   })
 }
 
+// 地图实例
+const map = ref(null)
+
+// 初始化地图
+const initMap = (AMap) => {
+  return new Promise((resolve) => {
+    map.value = new AMap.Map(mapContainer.value, {
+      zoom: 15,
+      center: [116.397428, 39.90923],
+      viewMode: '2D',
+      resizeEnable: true,
+      zoomEnable: true,
+      dragEnable: true,
+      doubleClickZoom: false,
+      keyboardEnable: false,
+      rotateEnable: false,
+      pitchEnable: false,
+      showLabel: false,
+      mapStyle: 'amap://styles/normal',
+      features: ['bg', 'road', 'point'],
+    })
+    resolve(map.value)
+  })
+}
+
 // 组件挂载时启动摄像头、获取位置和课程信息
 onMounted(() => {
   // 设置高德地图安全密钥
@@ -120,8 +150,10 @@ onMounted(() => {
   })
     .then(async (AMap) => {
       await startCamera()
+      await initMap(AMap)
       try {
-        await getLocationByAMap(AMap)
+        const location = await getLocationByAMap(AMap)
+        map.value.setCenter([location.longitude, location.latitude])
         verifyLocation()
       } catch (error) {
         locationStatus.value = error.message // 显示具体的错误信息
@@ -158,7 +190,6 @@ onBeforeUnmount(() => {
 .header-content {
   display: flex;
   align-items: center;
-  height: 100%;
   position: relative;
 }
 
@@ -257,11 +288,29 @@ onBeforeUnmount(() => {
   }
 }
 
-.camera-video {
+.camera-container {
+  position: relative;
   width: 100%;
   max-width: 640px;
+  margin: 0 auto;
+}
+
+.camera-video {
+  width: 100%;
   border-radius: 8px;
   margin-bottom: 20px;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 30%;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .camera-controls {
