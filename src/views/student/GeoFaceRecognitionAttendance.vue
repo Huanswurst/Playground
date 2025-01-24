@@ -148,17 +148,22 @@ const getLocationByAMap = (AMap) => {
       if (status === 'complete') {
         const { latitude, longitude } = result.position
         
-        // 验证坐标有效性
-        if (isNaN(latitude) || isNaN(longitude)) {
-          throw new Error('获取的坐标无效')
+        // 更健壮的坐标验证
+        if (typeof latitude !== 'number' || typeof longitude !== 'number' ||
+            isNaN(latitude) || isNaN(longitude) ||
+            latitude < -90 || latitude > 90 ||
+            longitude < -180 || longitude > 180) {
+          console.warn('获取的坐标无效，使用默认中心点')
+          return
         }
         
         userLocation.value = { latitude, longitude }
         
-        // 更新地图中心
-        const center = [longitude, latitude]
-        if (center.every(coord => !isNaN(coord))) {
+        // 确保地图实例存在
+        if (map.value && typeof map.value.setCenter === 'function') {
+          const center = [longitude, latitude]
           map.value.setCenter(center)
+          map.value.setZoom(17)
         }
         
         resolve({ latitude, longitude })
