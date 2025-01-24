@@ -191,31 +191,27 @@ const getAMapLocation = (AMap) => {
   })
 }
 
-// 双重校验定位
-const validateLocation = async (browserLoc, amapLoc) => {
-  if (!browserLoc || !amapLoc) {
-    locationStatus.value = '定位校验失败：缺少定位数据'
+// 计算最终定位
+const calculateFinalLocation = (browserLoc, amapLoc) => {
+  if (browserLoc && amapLoc) {
+    // 两个定位都存在，取中点
+    return {
+      latitude: (browserLoc.latitude + amapLoc.latitude) / 2,
+      longitude: (browserLoc.longitude + amapLoc.longitude) / 2,
+      source: 'combined'
+    }
+  } else if (browserLoc) {
+    // 只有浏览器定位
+    return browserLoc
+  } else if (amapLoc) {
+    // 只有高德定位
+    return amapLoc
+  } else {
+    // 无定位数据
+    locationStatus.value = '无法获取定位数据'
     locationStatusType.value = 'error'
-    return false
+    return null
   }
-
-  const distance = calculateDistance(
-    browserLoc.latitude,
-    browserLoc.longitude,
-    amapLoc.latitude,
-    amapLoc.longitude
-  )
-
-  // 允许误差范围：100米
-  if (distance > 100) {
-    locationStatus.value = `定位校验失败：定位偏差过大（${distance.toFixed(2)}米）`
-    locationStatusType.value = 'error'
-    return false
-  }
-
-  locationStatus.value = '定位校验成功'
-  locationStatusType.value = 'success'
-  return true
 }
 
 const initAMap = async () => {
@@ -238,14 +234,15 @@ const initAMap = async () => {
       getAMapLocation(AMap)
     ])
 
-    // 校验定位
-    const isValid = await validateLocation(browserLoc, amapLoc)
-
-    if (isValid) {
-      // 使用高德定位结果
-      const center = [amapLoc.longitude, amapLoc.latitude]
+    // 计算最终定位
+    const finalLocation = calculateFinalLocation(browserLoc, amapLoc)
+    
+    if (finalLocation) {
+      const center = [finalLocation.longitude, finalLocation.latitude]
       map.value.setCenter(center)
-      userLocation.value = amapLoc
+      userLocation.value = finalLocation
+      locationStatus.value = '定位成功'
+      locationStatusType.value = 'success'
 
       // 添加标记点
       marker.value = new AMap.Marker({
