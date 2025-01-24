@@ -122,10 +122,26 @@ const getLocationByAMap = (AMap) => {
       showButton: false,
     })
 
-    geolocation.getCurrentPosition((status, result) => {
+    // 添加标记点
+    const marker = new AMap.Marker({
+      position: [116.397428, 39.90923],
+      icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png',
+      offset: new AMap.Pixel(-13, -30)
+    })
+
+    // 实时定位
+    geolocation.watchPosition((status, result) => {
       if (status === 'complete') {
         const { latitude, longitude } = result.position
         userLocation.value = { latitude, longitude }
+        
+        // 更新地图中心
+        map.value.setCenter([longitude, latitude])
+        
+        // 更新标记点位置
+        marker.setPosition([longitude, latitude])
+        map.value.add(marker)
+        
         resolve({ latitude, longitude })
       } else {
         console.error('获取位置失败:', result)
@@ -152,6 +168,13 @@ const initMap = (AMap) => {
       mapStyle: 'amap://styles/normal',
       features: ['bg', 'road', 'point'],
     })
+    
+    // 添加缩放控件
+    map.value.addControl(new AMap.Zoom())
+    
+    // 添加比例尺
+    map.value.addControl(new AMap.Scale())
+    
     isMapLoading.value = false
     resolve(map.value)
   })
