@@ -67,30 +67,28 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
-import AMapLoader from '@amap/amap-jsapi-loader' // 导入高德地图加载器
+import AMapLoader from '@amap/amap-jsapi-loader'
 
-// 高德地图密钥和安全密钥
-const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9' // 你的高德地图 API Key
-const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d' // 你的高德地图安全密钥
+const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9'
+const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d'
 
-// 摄像头相关
-const video = ref(null) // 视频元素引用
-const canvas = ref(null) // 画布元素引用
-const mapContainer = ref(null) // 地图容器引用
-const mediaStream = ref(null) // 媒体流对象
-const isFrontCamera = ref(false) // 是否使用前置摄像头
+const video = ref(null)
+const canvas = ref(null)
+const mapContainer = ref(null)
+const mediaStream = ref(null)
+const isFrontCamera = ref(false)
 
-// 状态相关
-const recognitionResult = ref('') // 人脸识别结果
-const locationStatus = ref('正在获取位置...') // 位置验证状态
-const locationStatusType = ref('info') // 位置验证状态类型
-const userLocation = ref(null) // 用户当前位置
-const allowedLocation = ref(null) // 允许的位置范围
-const isLoading = ref(false) // 加载状态
-const courseInfo = ref(null) // 课程信息
-const isMapLoading = ref(true) // 地图加载状态
+const recognitionResult = ref('')
+const locationStatus = ref('正在获取位置...')
+const locationStatusType = ref('info')
+const userLocation = ref(null)
+const allowedLocation = ref(null)
+const isLoading = ref(false)
+const courseInfo = ref(null)
+const isMapLoading = ref(true)
 
-// 使用高德地图获取 IP 定位
+const map = ref(null)
+
 const getLocationByAMap = (AMap) => {
   return new Promise((resolve, reject) => {
     if (!AMap || !AMap.Geolocation) {
@@ -98,11 +96,10 @@ const getLocationByAMap = (AMap) => {
       return
     }
 
-    // 使用高德地图的 IP 定位功能
     const geolocation = new AMap.Geolocation({
-      enableHighAccuracy: true, // 是否使用高精度定位
-      timeout: 5000, // 超时时间
-      showButton: false, // 是否显示定位按钮
+      enableHighAccuracy: true,
+      timeout: 5000,
+      showButton: false,
     })
 
     geolocation.getCurrentPosition((status, result) => {
@@ -111,17 +108,13 @@ const getLocationByAMap = (AMap) => {
         userLocation.value = { latitude, longitude }
         resolve({ latitude, longitude })
       } else {
-        console.error('获取位置失败:', result) // 打印完整的错误信息
+        console.error('获取位置失败:', result)
         reject(new Error(`获取位置失败: ${result.message}`))
       }
     })
   })
 }
 
-// 地图实例
-const map = ref(null)
-
-// 初始化地图
 const initMap = (AMap) => {
   return new Promise((resolve) => {
     map.value = new AMap.Map(mapContainer.value, {
@@ -144,7 +137,6 @@ const initMap = (AMap) => {
   })
 }
 
-// 启动摄像头
 const startCamera = async () => {
   try {
     const constraints = {
@@ -162,52 +154,69 @@ const startCamera = async () => {
   }
 }
 
-// 组件挂载时启动摄像头、获取位置和课程信息
+const switchCamera = async () => {
+  isFrontCamera.value = !isFrontCamera.value
+  if (mediaStream.value) {
+    mediaStream.value.getTracks().forEach(track => track.stop())
+  }
+  await startCamera()
+}
+
+const startRecognition = () => {
+  // 这里添加人脸识别逻辑
+  recognitionResult.value = '识别成功'
+}
+
+const verifyLocation = () => {
+  // 这里添加位置验证逻辑
+  locationStatus.value = '位置验证通过'
+  locationStatusType.value = 'success'
+}
+
+const fetchCourseAndLocationInfo = async () => {
+  // 这里添加获取课程和位置信息的逻辑
+  isLoading.value = true
+  try {
+    // 模拟异步请求
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    courseInfo.value = { name: '课程名称', location: { latitude: 39.90923, longitude: 116.397428 } }
+    allowedLocation.value = { latitude: 39.90923, longitude: 116.397428 }
+  } catch (error) {
+    console.error('获取课程信息失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 onMounted(async () => {
-  // 设置高德地图安全密钥
   window._AMapSecurityConfig = {
     securityJsCode: AMAP_SECRET,
   }
 
   try {
-    // 加载高德地图 JS API
-    await AMapLoader.load({
+    const AMap = await AMapLoader.load({
       key: AMAP_KEY,
       version: '2.0',
-      plugins: ['AMap.Geolocation'], // 需要使用的插件
+      plugins: ['AMap.Geolocation'],
     })
-      .then(async (AMap) => {
-        try {
-          await startCamera()
-          await initMap(AMap)
-          const location = await getLocationByAMap(AMap)
-          map.value.setCenter([location.longitude, location.latitude])
-          verifyLocation()
-          await fetchCourseAndLocationInfo()
-        } catch (error) {
-          isMapLoading.value = false
-          locationStatus.value = error.message // 显示具体的错误信息
-          locationStatusType.value = 'error'
-          console.error('地图加载失败:', error)
-        }
-      })
-      .catch((error) => {
-        isMapLoading.value = false
-        console.error('高德地图加载失败:', error)
-        locationStatus.value = '高德地图加载失败'
-        locationStatusType.value = 'error'
-      })
+
+    await startCamera()
+    await initMap(AMap)
+    const location = await getLocationByAMap(AMap)
+    map.value.setCenter([location.longitude, location.latitude])
+    verifyLocation()
+    await fetchCourseAndLocationInfo()
   } catch (error) {
-    console.error('组件初始化失败:', error)
-    locationStatus.value = '组件初始化失败'
+    isMapLoading.value = false
+    locationStatus.value = error.message
     locationStatusType.value = 'error'
+    console.error('初始化失败:', error)
   }
 })
 
-// 组件卸载时关闭摄像头
 onBeforeUnmount(() => {
   if (mediaStream.value) {
-    mediaStream.value.getTracks().forEach((track) => track.stop())
+    mediaStream.value.getTracks().forEach(track => track.stop())
   }
 })
 </script>
