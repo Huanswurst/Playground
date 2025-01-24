@@ -196,13 +196,6 @@ const initMap = (AMap) => {
       zoomPosition: false
     }))
 
-    // 添加地点搜索控件
-    map.value.addControl(new AMap.PlaceSearch({
-      pageSize: 5,
-      pageIndex: 1,
-      city: '全国',
-      panel: 'panel'
-    }))
     
     isMapLoading.value = false
     resolve(map.value)
