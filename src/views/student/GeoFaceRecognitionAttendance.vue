@@ -177,11 +177,10 @@ const initMap = (AMap) => {
       features: ['bg', 'road', 'point'],
     })
     
-    // 添加缩放控件
-    map.value.addControl(new AMap.Zoom())
-    
-    // 添加比例尺
-    map.value.addControl(new AMap.Scale())
+    // 添加工具条控件（包含缩放、比例尺等功能）
+    map.value.addControl(new AMap.ToolBar({
+      position: 'RB'
+    }))
     
     isMapLoading.value = false
     resolve(map.value)
@@ -264,7 +263,7 @@ onMounted(async () => {
     const AMap = await AMapLoader.load({
       key: AMAP_KEY,
       version: '2.0',
-      plugins: ['AMap.Geolocation'],
+      plugins: ['AMap.Geolocation', 'AMap.ToolBar', 'AMap.Scale'],
     })
 
     // 初始化地图
