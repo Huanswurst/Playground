@@ -23,6 +23,7 @@
           <!-- 地图容器 -->
           <div class="map-container">
             <div class="map-overlay" ref="mapContainer">
+            <div id="panel" :style="panelStyle"></div>
               <div v-if="isMapLoading" class="map-loading">
                 <span class="map-loading-text">地图加载中...</span>
               </div>
@@ -87,6 +88,19 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
+
+// 添加地点搜索面板样式
+const panelStyle = `
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 300px;
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 100;
+`
 
 const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9'
 const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d'
@@ -162,8 +176,7 @@ const getLocationByAMap = (AMap) => {
 const initMap = (AMap) => {
   return new Promise((resolve) => {
     map.value = new AMap.Map(mapContainer.value, {
-      zoom: 15,
-      center: [116.397428, 39.90923],
+      zoom: 17,
       viewMode: '2D',
       resizeEnable: true,
       zoomEnable: true,
@@ -172,14 +185,23 @@ const initMap = (AMap) => {
       keyboardEnable: false,
       rotateEnable: false,
       pitchEnable: false,
-      showLabel: false,
+      showLabel: true,
       mapStyle: 'amap://styles/normal',
-      features: ['bg', 'road', 'point'],
+      features: ['bg', 'road', 'point', 'building'],
     })
     
-    // 添加工具条控件（包含缩放、比例尺等功能）
+    // 添加工具条控件（去掉缩放按钮）
     map.value.addControl(new AMap.ToolBar({
-      position: 'RB'
+      position: 'RB',
+      zoomPosition: false
+    }))
+
+    // 添加地点搜索控件
+    map.value.addControl(new AMap.PlaceSearch({
+      pageSize: 5,
+      pageIndex: 1,
+      city: '全国',
+      panel: 'panel'
     }))
     
     isMapLoading.value = false
@@ -269,9 +291,17 @@ onMounted(async () => {
     // 初始化地图
     await initMap(AMap)
 
-    // 获取地理位置
+    // 获取地理位置并设置为中心点
     const location = await getLocationByAMap(AMap)
     map.value.setCenter([location.longitude, location.latitude])
+    map.value.setZoom(17)
+    
+    // 添加当前位置标记
+    new AMap.Marker({
+      position: [location.longitude, location.latitude],
+      title: '我的位置',
+      map: map.value
+    })
 
     // 验证位置
     verifyLocation()
