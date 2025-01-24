@@ -110,54 +110,75 @@ const cameraError = ref('')
 const map = ref(null)
 
 const getLocationByAMap = (AMap) => {
-  return new Promise((resolve, reject) => {
-    if (!AMap || !AMap.Geolocation) {
-      reject(new Error('高德地图 API 未加载或版本不兼容'))
+  // 先尝试浏览器IP定位
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null)
       return
     }
+    
+    // 使用浏览器原生定位API
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        })
+      },
+      () => resolve(null), // 定位失败返回null
+      {
+        enableHighAccuracy: true,
+        timeout: 2000,
+        maximumAge: 30000
+      }
+    )
+  }).then((ipLocation) => {
+    if (ipLocation) {
+      return ipLocation
+    }
+    
+    // 如果IP定位失败，使用高德定位
+    return new Promise((resolve, reject) => {
+      if (!AMap || !AMap.Geolocation) {
+        reject(new Error('高德地图 API 未加载或版本不兼容'))
+        return
+      }
 
-    // 优化定位配置
-    const geolocation = new AMap.Geolocation({
-      enableHighAccuracy: true,
-      timeout: 2000,  // 缩短超时时间
-      maximumAge: 30000,  // 使用缓存位置
-      showButton: false,  // 隐藏定位按钮
-      position: 'RB',
-      offset: [10, 20],
-      showMarker: true,
-      markerOptions: {
-        offset: new AMap.Pixel(-18, -36),
-        content: '<img src="https://a.amap.com/jsapi_demos/static/resource/img/user.png" style="width:36px;height:36px"/>'
-      },
-      showCircle: true,
-      circleOptions: {
-        strokeColor: '#0093FF',
-        noSelect: true,
-        strokeOpacity: 0.5,
-        strokeWeight: 1,
-        fillColor: '#02B0FF',
-        fillOpacity: 0.25
-      },
-      panToLocation: true,
-      zoomToAccuracy: true,
-      noGeoLocation: 0,
-      animation: false
-    })
+      const geolocation = new AMap.Geolocation({
+        enableHighAccuracy: true,
+        timeout: 2000,  // 缩短超时时间
+        maximumAge: 30000,  // 使用缓存位置
+        showButton: true,  // 显示定位按钮
+        position: 'RB',
+        offset: [10, 20],
+        showMarker: true,
+        buttonPosition: 'RB',
+        buttonOffset: new AMap.Pixel(10, 50), // 调整按钮位置
+        buttonDom: '<button class="amap-geo-btn" style="background: #409eff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">定位</button>', // 自定义按钮样式
+        markerOptions: {
+          offset: new AMap.Pixel(-18, -36),
+          content: '<img src="https://a.amap.com/jsapi_demos/static/resource/img/user.png" style="width:36px;height:36px"/>'
+        },
+        showCircle: true,
+        circleOptions: {
+          strokeColor: '#0093FF',
+          noSelect: true,
+          strokeOpacity: 0.5,
+          strokeWeight: 1,
+          fillColor: '#02B0FF',
+          fillOpacity: 0.25
+        },
+        panToLocation: true,
+        zoomToAccuracy: true,
+        noGeoLocation: 0,
+        animation: false
+      })
 
     map.value.addControl(geolocation)
 
     geolocation.watchPosition((status, result) => {
       if (status === 'complete') {
         const { latitude, longitude } = result.position
-        
-        // 更健壮的坐标验证
-        if (typeof latitude !== 'number' || typeof longitude !== 'number' ||
-            isNaN(latitude) || isNaN(longitude) ||
-            latitude < -90 || latitude > 90 ||
-            longitude < -180 || longitude > 180) {
-          console.warn('获取的坐标无效，使用默认中心点')
-          return
-        }
         
         userLocation.value = { latitude, longitude }
         
@@ -174,6 +195,7 @@ const getLocationByAMap = (AMap) => {
         reject(new Error(`获取位置失败: ${result.message}`))
       }
     })
+  })
   })
 }
 
