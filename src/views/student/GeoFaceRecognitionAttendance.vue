@@ -116,10 +116,12 @@ const getLocationByAMap = (AMap) => {
       return
     }
 
+    // 优化定位配置
     const geolocation = new AMap.Geolocation({
       enableHighAccuracy: true,
-      timeout: 5000,
-      showButton: true,
+      timeout: 2000,  // 缩短超时时间
+      maximumAge: 30000,  // 使用缓存位置
+      showButton: false,  // 隐藏定位按钮
       position: 'RB',
       offset: [10, 20],
       showMarker: true,
