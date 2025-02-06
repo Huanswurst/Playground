@@ -38,10 +38,6 @@ body {
 code, .number {
   font-family: var(--font-secondary);
   font-weight: 500;
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 /* 响应式字体大小 */
