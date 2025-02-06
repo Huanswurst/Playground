@@ -191,7 +191,7 @@ export default {
   align-items: center;
   min-height: 100vh;
   position: relative;
-  padding-bottom: 60px;
+  /*padding-bottom: 60px;*/
   background: #f0f2f5; /* 增加微背景色 */
   overflow: hidden;    /* 为视觉效果做准备 */
 }
@@ -223,8 +223,8 @@ export default {
 
 /* 底部样式 */
 .footer {
-  position: absolute;
-  bottom: 0;
+  margin-top: auto; 
+  position: static;
   width: 100%;
   text-align: center;
   padding: 10px 0;
