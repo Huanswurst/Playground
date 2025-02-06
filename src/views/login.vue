@@ -223,10 +223,9 @@ export default {
 
 /* 底部样式 */
 .footer {
-  position: absolute;
-  bottom: 0;
+  margin-top: auto;      /* 自动将 footer 推到底部 */
+  position: relative;     /* 改为相对定位 */
   width: 100%;
-  text-align: center;
   padding: 10px 0;
   background-color: #f5f7fa;
 }
