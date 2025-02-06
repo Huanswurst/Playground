@@ -24,6 +24,7 @@ import LogManagement from '../views/admin/LogManagement.vue';
 import PermissionManagement from '../views/admin/PermissionManagement.vue';
 
 const routes = [
+  { path: '/student/geo-attendance-test', component: () => import('../views/student/GeoFaceRecognitionAttendanceTest.vue') },
     { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
     { path: '/register', component: Register },
