@@ -189,7 +189,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 98vh;
+  min-height: 98.37vh;
   position: relative;
   padding-bottom: 60px;
   background: #f0f2f5; /* 增加微背景色 */
