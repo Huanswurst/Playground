@@ -21,4 +21,5 @@ urlpatterns = [
     path('current_user/', views.current_user, name='current_user'),
     path('logout/', views.logout_view, name='logout'),
     path('test/', views.test_api, name='test_api'),
+    path('face-recognition/', views.face_recognition, name='face_recognition'),
 ]

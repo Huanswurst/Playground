@@ -7,6 +7,7 @@ import StudentDashboard from '../views/student/dashboard.vue';
 import StudentAttendance from '../views/student/StudentAttendance.vue';
 import FaceRecognitionAttendance from '../views/student/FaceRecognitionAttendance.vue';
 import GeoFaceRecognitionAttendance from '../views/student/GeoFaceRecognitionAttendance.vue';
+import GeoFaceRecognitionAttendanceTest from '../views/student/PhotoRecognition.vue';
 /*import StudentCheckIn from '../views/student/CheckIn.vue';
 import StudentCheckOut from '../views/student/CheckOut.vue';
 */
@@ -23,8 +24,9 @@ import DataStatistics from '../views/admin/DataStatistics.vue';
 import LogManagement from '../views/admin/LogManagement.vue';
 import PermissionManagement from '../views/admin/PermissionManagement.vue';
 
+
 const routes = [
-  { path: '/student/geo-attendance-test', component: () => import('../views/student/GeoFaceRecognitionAttendanceTest.vue') },
+  { path: '/student/geo-attendance-test', component: GeoFaceRecognitionAttendanceTest },
     { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
     { path: '/register', component: Register },
