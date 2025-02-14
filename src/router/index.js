@@ -30,7 +30,6 @@ const routes = [
     { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
     { path: '/register', component: Register },
-    { path: '/test',component:AiTest},
     // 学生路由
     { path: '/student/dashboard', component: StudentDashboard },
     { path: '/student/attendance', component: StudentAttendance },
