@@ -45,120 +45,64 @@
 
 <script setup>
 import { ref } from 'vue'
-let messageIndex = -1 // 在此处声明变量
-// 状态管理
-const messages = ref(JSON.parse(localStorage.getItem('chatHistory')) || [])
+
+const messages = ref([])
 const inputText = ref('')
 const isLoading = ref(false)
 const controller = ref(null)
 
-// 清除历史记录
-const clearHistory = () => {
-  messages.value = []
-  localStorage.removeItem('chatHistory')
-  showToast('历史记录已清除')
-}
-
-// 停止生成
-const stopGeneration = () => {
-  if (controller.value) {
-    controller.value.abort()
-    isLoading.value = false
-    showToast('已停止生成')
-  }
-}
-
-// 显示临时提示
-const showToast = (text) => {
-  const toast = document.createElement('div')
-  toast.className = 'toast-message'
-  toast.textContent = text
-  document.body.appendChild(toast)
-  
-  setTimeout(() => {
-    toast.remove()
-  }, 2000)
-}
-
-// 发送消息
-const sendMessage = async () => {
+async function sendMessage() {
   if (!inputText.value.trim() || isLoading.value) return
-
+  
   try {
     isLoading.value = true
-    messages.value.push({ role: 'user', content: inputText.value })
-    messages.value.push({ role: 'assistant', content: '' })
-    messageIndex = messages.value.length - 1 // 在此处赋值
-
-    controller.value = new AbortController()
+    const userMessage = { role: 'user', content: inputText.value }
+    messages.value.push(userMessage)
     
+    // 添加loading状态消息
+    const assistantMessage = { role: 'assistant', content: '', loading: true }
+    messages.value.push(assistantMessage)
+    const messageIndex = messages.value.length - 1
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: messages.value.slice(0, -1)
-      }),
-      signal: controller.value.signal
+        messages: [userMessage],
+        stream: false // 明确要求非流式响应
+      })
     })
 
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      
-      const chunk = decoder.decode(value, { stream: true })
-      processChunk(chunk, messageIndex)
+    // 处理标准响应
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    
+    const data = await response.json()
+    const content = data.choices[0].message.content
+    
+    // 直接更新消息内容
+    messages.value[messageIndex] = {
+      ...assistantMessage,
+      content: content,
+      loading: false
     }
 
   } catch (error) {
-    handleError(error, messageIndex)
-  } finally {
-    finalizeRequest(messageIndex)
-  }
-}
-
-// 处理数据块
-const processChunk = (chunk, messageIndex) => {
-  chunk.split('\n\n').forEach(line => {
-    if (!line.startsWith('data: ')) return
-    try {
-      const data = JSON.parse(line.replace('data: ', ''))
-      if (data.choices?.[0]?.delta?.content) {
-        messages.value[messageIndex].content += data.choices[0].delta.content
-      }
-    } catch (e) {
-      console.warn('数据解析错误:', e)
+    messages.value[messageIndex] = {
+      ...assistantMessage,
+      content: '❌ 请求失败: ' + error.message,
+      loading: false
     }
-  })
-}
-
-// 错误处理
-const handleError = (error, messageIndex) => {
-  if (error.name !== 'AbortError') {
-    messages.value[messageIndex].content = '❌ 请求失败: ' + error.message
+  } finally {
+    isLoading.value = false
+    inputText.value = ''
+    saveHistory()
   }
 }
 
-// 结束请求处理
-const finalizeRequest = (messageIndex) => {
-  isLoading.value = false
-  inputText.value = ''
-  controller.value = null
-  saveHistory()
-  
-  // 自动滚动到底部
-  setTimeout(() => {
-    const container = document.querySelector('.messages')
-    container.scrollTop = container.scrollHeight
-  }, 100)
-}
-
-// 保存历史记录
+// 保存历史（保持原有实现）
 const saveHistory = () => {
   localStorage.setItem('chatHistory', JSON.stringify(
-    messages.value.filter(m => m.content.trim())
+    messages.value.filter(m => !m.loading)
   ))
 }
 </script>
