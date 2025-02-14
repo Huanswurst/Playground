@@ -6,7 +6,7 @@
         <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
           <div class="avatar">
             <el-icon v-if="msg.role === 'user'"><User /></el-icon>
-            <el-icon v-if="msg.role === 'assistant'"><Robot /></el-icon>
+            <el-icon v-if="msg.role === 'assistant'"><Promotion /></el-icon>
           </div>
           <div class="content">{{ msg.content }}</div>
         </div>
@@ -35,7 +35,7 @@
 import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { ElIcon } from 'element-plus'
-import { User, Robot } from '@element-plus/icons-vue'
+import { User, Promotion } from '@element-plus/icons-vue'
 
 // 状态管理
 const conversation = ref(JSON.parse(localStorage.getItem('conversation')) || [])
