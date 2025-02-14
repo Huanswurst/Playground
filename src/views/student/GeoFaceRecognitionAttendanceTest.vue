@@ -1,58 +1,51 @@
 <template>
   <div class="app">
-    <h1>AI对话助手</h1>
+    <h1>AI智能助手</h1>
     <div class="chat-container">
       <div class="messages">
         <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
           <div class="avatar">
             <el-icon v-if="msg.role === 'user'"><User /></el-icon>
-            <el-icon v-if="msg.role === 'assistant'"><Promotion /></el-icon>
+            <el-icon v-if="msg.role === 'assistant'"><ChatLineRound /></el-icon>
           </div>
           <div class="content">{{ msg.content }}</div>
         </div>
-        <div v-if="isLoading" class="loading">AI正在思考...</div>
+        <div v-if="isLoading" class="loading">AI正在思考中...</div>
       </div>
 
       <div class="input-area">
         <el-input
           v-model="inputMessage"
-          placeholder="输入你的问题..."
+          placeholder="输入您的问题..."
           @keyup.enter="handleSend"
           :disabled="isLoading"
         />
         <el-button type="primary" @click="handleSend" :loading="isLoading">发送</el-button>
-      </div>
-
-      <div class="config">
-        <el-input v-model="apiEndpoint" placeholder="API地址" />
-        <el-input v-model="apiKey" type="password" placeholder="API密钥" show-password />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
-import axios from 'axios'
-import { ElIcon } from 'element-plus'
-import { User, Promotion } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { User, ChatLineRound } from '@element-plus/icons-vue'
 
-// 状态管理
+// 固定API配置
+const API_CONFIG = {
+  apiKey: '1c2d1b65-e1bb-4a4a-8a07-6ed162435bde',
+  baseURL: 'https://ark.cn-beijing.volces.com/api/v3'
+}
+
+// 对话状态
 const conversation = ref(JSON.parse(localStorage.getItem('conversation')) || [])
 const isLoading = ref(false)
-const apiKey = ref(localStorage.getItem('apiKey') || '')
-const apiEndpoint = ref(localStorage.getItem('apiEndpoint') || 'https://api.openai.com/v1/chat/completions')
 const inputMessage = ref('')
 
-// 持久化存储
-watch([apiKey, apiEndpoint], ([newKey, newEndpoint]) => {
-  localStorage.setItem('apiKey', newKey)
-  localStorage.setItem('apiEndpoint', newEndpoint)
+// 初始化加载历史记录
+onMounted(() => {
+  const saved = localStorage.getItem('conversation')
+  if (saved) conversation.value = JSON.parse(saved)
 })
-
-watch(conversation, (newVal) => {
-  localStorage.setItem('conversation', JSON.stringify(newVal))
-}, { deep: true })
 
 // 流式请求处理
 const handleSend = async () => {
@@ -62,11 +55,11 @@ const handleSend = async () => {
   
   try {
     const controller = new AbortController()
-    const response = await fetch(apiEndpoint.value, {
+    const response = await fetch(`${API_CONFIG.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey.value}`
+        'Authorization': `Bearer ${API_CONFIG.apiKey}`
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
@@ -95,7 +88,7 @@ const handleSend = async () => {
         
         try {
           const parsed = JSON.parse(message)
-          const content = parsed.choices[0].delta.content
+          const content = parsed.choices[0]?.delta?.content
           if (content) {
             aiResponseContent += content
             conversation.value[conversation.value.length - 1].content = aiResponseContent
@@ -106,43 +99,51 @@ const handleSend = async () => {
       }
     }
   } catch (error) {
-    console.error('API错误:', error)
-    conversation.value.push({ role: 'assistant', content: '请求失败，请检查配置' })
+    console.error('API请求失败:', error)
+    conversation.value.push({ role: 'assistant', content: '服务暂时不可用，请稍后再试' })
   } finally {
     isLoading.value = false
     inputMessage.value = ''
+    localStorage.setItem('conversation', JSON.stringify(conversation.value))
   }
 }
 </script>
 
 <style>
 .app {
-  font-family: Arial, sans-serif;
-  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .chat-container {
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+  border: 1px solid #e4e7ed;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  background: white;
 }
 
 .messages {
   height: 60vh;
   overflow-y: auto;
-  margin-bottom: 20px;
-  padding: 10px;
-  background: #fafafa;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
   border-radius: 8px;
 }
 
 .message {
   display: flex;
-  margin: 15px 0;
-  gap: 12px;
+  margin: 1rem 0;
+  gap: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .message.user {
@@ -151,52 +152,59 @@ const handleSend = async () => {
 
 .avatar {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: #e0e0e0;
+  background: #409eff;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 18px;
+}
+
+.assistant .avatar {
+  background: #67c23a;
 }
 
 .content {
-  max-width: 70%;
+  max-width: 75%;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   line-height: 1.6;
+  font-size: 15px;
 }
 
 .assistant .content {
   background: white;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e4e7ed;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
 .user .content {
   background: #409eff;
   color: white;
+  box-shadow: 0 2px 8px rgba(64,158,255,0.2);
 }
 
 .input-area {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.config {
-  margin-top: 20px;
-  background: #f5f7fa;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-.config .el-input {
-  margin-bottom: 10px;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .loading {
-  color: #666;
+  color: #909399;
   text-align: center;
-  padding: 10px;
+  padding: 1rem;
+  font-size: 14px;
+}
+
+.el-input {
+  flex-grow: 1;
+}
+
+.el-button {
+  width: 100px;
 }
 </style>
