@@ -45,7 +45,7 @@
 
 <script setup>
 import { ref } from 'vue'
-
+let messageIndex = -1 // 在此处声明变量
 // 状态管理
 const messages = ref(JSON.parse(localStorage.getItem('chatHistory')) || [])
 const inputText = ref('')
@@ -88,7 +88,7 @@ const sendMessage = async () => {
     isLoading.value = true
     messages.value.push({ role: 'user', content: inputText.value })
     messages.value.push({ role: 'assistant', content: '' })
-    const messageIndex = messages.value.length - 1
+    messageIndex = messages.value.length - 1 // 在此处赋值
 
     controller.value = new AbortController()
     
