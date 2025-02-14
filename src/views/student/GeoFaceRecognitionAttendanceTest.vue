@@ -1,191 +1,243 @@
 <template>
   <div class="chat-container">
+    <!-- 操作按钮区域 -->
+    <div class="action-buttons">
+      <button @click="clearHistory" class="btn-clear">清除历史</button>
+      <button 
+        @click="stopGeneration" 
+        class="btn-stop"
+        v-if="isLoading"
+      >
+        停止生成
+      </button>
+    </div>
+
+    <!-- 消息展示区域 -->
     <div class="messages">
-      <div v-for="(msg, index) in history" :key="index" :class="['message', msg.role]">
+      <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.role]">
         <div class="avatar">
           <span v-if="msg.role === 'user'">👤</span>
           <span v-else>🤖</span>
         </div>
         <div class="content">{{ msg.content }}</div>
       </div>
-      <div v-if="loading" class="loading">AI正在生成...</div>
+      <div v-if="isLoading" class="loading">AI正在思考中...</div>
     </div>
 
+    <!-- 输入区域 -->
     <div class="input-area">
       <input
-        v-model="input"
-        placeholder="输入您的问题"
+        v-model="inputText"
+        placeholder="输入您的问题..."
         @keyup.enter="sendMessage"
-        :disabled="loading"
+        :disabled="isLoading"
       />
-      <button @click="sendMessage" :disabled="loading">
-        {{ loading ? '生成中...' : '发送' }}
+      <button 
+        @click="sendMessage" 
+        :disabled="isLoading"
+        class="btn-send"
+      >
+        {{ isLoading ? '发送中...' : '发送' }}
       </button>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      history: JSON.parse(localStorage.getItem('chatHistory')) || [],
-      input: '',
-      loading: false,
-      controller: null
-    }
-  },
-  methods: {
-    async sendMessage() {
-      if (!this.input.trim() || this.loading) return
-      
-      this.loading = true
-      this.history.push({ role: 'user', content: this.input })
-      this.history.push({ role: 'assistant', content: '' })
-      
-      try {
-        this.controller = new AbortController()
-        const response = await fetch('https://www.huanswurst.top/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "system",
-                content: ""
-              },
-              ...this.history.filter(m => m.role !== 'assistant')
-            ],
-            stream: true
-          }),
-          signal: this.controller.signal
-        })
+<script setup>
+import { ref } from 'vue'
 
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        let assistantIndex = this.history.length - 1
+// 状态管理
+const messages = ref(JSON.parse(localStorage.getItem('chatHistory')) || [])
+const inputText = ref('')
+const isLoading = ref(false)
+const controller = ref(null)
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n').filter(l => l.startsWith('data: '))
-          
-          lines.forEach(line => {
-            try {
-              const data = JSON.parse(line.replace('data: ', ''))
-              if (data.choices?.[0]?.delta?.content) {
-                this.history[assistantIndex].content += data.choices[0].delta.content
-              }
-            } catch (e) {
-              console.warn('解析错误:', e)
-            }
-          })
-        }
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          this.history[assistantIndex].content = '请求失败，请重试'
-        }
-      } finally {
-        this.loading = false
-        this.input = ''
-        localStorage.setItem('chatHistory', JSON.stringify(this.history))
-      }
-    }
-  },
-  beforeUnmount() {
-    if (this.controller) {
-      this.controller.abort()
-    }
+// 清除历史记录
+const clearHistory = () => {
+  messages.value = []
+  localStorage.removeItem('chatHistory')
+  showToast('历史记录已清除')
+}
+
+// 停止生成
+const stopGeneration = () => {
+  if (controller.value) {
+    controller.value.abort()
+    isLoading.value = false
+    showToast('已停止生成')
   }
+}
+
+// 显示临时提示
+const showToast = (text) => {
+  const toast = document.createElement('div')
+  toast.className = 'toast-message'
+  toast.textContent = text
+  document.body.appendChild(toast)
+  
+  setTimeout(() => {
+    toast.remove()
+  }, 2000)
+}
+
+// 发送消息
+const sendMessage = async () => {
+  if (!inputText.value.trim() || isLoading.value) return
+
+  try {
+    isLoading.value = true
+    messages.value.push({ role: 'user', content: inputText.value })
+    messages.value.push({ role: 'assistant', content: '' })
+    const messageIndex = messages.value.length - 1
+
+    controller.value = new AbortController()
+    
+    const response = await fetch('/api/chat-stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: messages.value.slice(0, -1)
+      }),
+      signal: controller.value.signal
+    })
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      const chunk = decoder.decode(value, { stream: true })
+      processChunk(chunk, messageIndex)
+    }
+
+  } catch (error) {
+    handleError(error, messageIndex)
+  } finally {
+    finalizeRequest(messageIndex)
+  }
+}
+
+// 处理数据块
+const processChunk = (chunk, messageIndex) => {
+  chunk.split('\n\n').forEach(line => {
+    if (!line.startsWith('data: ')) return
+    try {
+      const data = JSON.parse(line.replace('data: ', ''))
+      if (data.choices?.[0]?.delta?.content) {
+        messages.value[messageIndex].content += data.choices[0].delta.content
+      }
+    } catch (e) {
+      console.warn('数据解析错误:', e)
+    }
+  })
+}
+
+// 错误处理
+const handleError = (error, messageIndex) => {
+  if (error.name !== 'AbortError') {
+    messages.value[messageIndex].content = '❌ 请求失败: ' + error.message
+  }
+}
+
+// 结束请求处理
+const finalizeRequest = (messageIndex) => {
+  isLoading.value = false
+  inputText.value = ''
+  controller.value = null
+  saveHistory()
+  
+  // 自动滚动到底部
+  setTimeout(() => {
+    const container = document.querySelector('.messages')
+    container.scrollTop = container.scrollHeight
+  }, 100)
+}
+
+// 保存历史记录
+const saveHistory = () => {
+  localStorage.setItem('chatHistory', JSON.stringify(
+    messages.value.filter(m => m.content.trim())
+  ))
 }
 </script>
 
 <style>
-.chat-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.messages {
-  height: 60vh;
-  overflow-y: auto;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 20px;
-}
-
-.message {
+/* 新增样式 */
+.action-buttons {
+  margin-bottom: 1rem;
   display: flex;
-  gap: 12px;
-  margin: 15px 0;
+  gap: 10px;
 }
 
-.message.user {
-  flex-direction: row-reverse;
+.btn-clear, .btn-stop {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.content {
-  max-width: 70%;
-  padding: 12px;
-  border-radius: 12px;
-  line-height: 1.6;
-}
-
-.message.user .content {
-  background: #409eff;
+.btn-clear {
+  background: #ff4757;
   color: white;
 }
 
-.message.assistant .content {
-  background: #f8f9fa;
-  border: 1px solid #eee;
+.btn-stop {
+  background: #ffa502;
+  color: white;
 }
 
+.btn-clear:hover, .btn-stop:hover {
+  opacity: 0.9;
+}
+
+.toast-message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { bottom: -50px; }
+  to { bottom: 20px; }
+}
+
+/* 原有样式优化 */
 .input-area {
   display: flex;
   gap: 10px;
+  margin-top: 1rem;
 }
 
 input {
   flex: 1;
   padding: 12px;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: 4px;
 }
 
-button {
+.btn-send {
   padding: 12px 24px;
-  background: #409eff;
+  background: #2ed573;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-button:disabled {
-  background: #a0cfff;
-  cursor: not-allowed;
-}
-
-.loading {
-  color: #666;
-  text-align: center;
-  padding: 10px;
+.messages {
+  height: 60vh;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
 }
 </style>
