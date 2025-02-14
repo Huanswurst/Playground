@@ -1,149 +1,127 @@
 <template>
-  <div class="app">
-    <h1>AI智能助手</h1>
-    <div class="chat-container">
-      <div class="messages">
-        <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
-          <div class="avatar">
-            <el-icon v-if="msg.role === 'user'"><User /></el-icon>
-            <el-icon v-if="msg.role === 'assistant'"><ChatLineRound /></el-icon>
-          </div>
-          <div class="content">{{ msg.content }}</div>
+  <div class="chat-container">
+    <div class="messages">
+      <div v-for="(msg, index) in history" :key="index" :class="['message', msg.role]">
+        <div class="avatar">
+          <span v-if="msg.role === 'user'">👤</span>
+          <span v-else>🤖</span>
         </div>
-        <div v-if="isLoading" class="loading">AI正在思考中...</div>
+        <div class="content">{{ msg.content }}</div>
       </div>
+      <div v-if="loading" class="loading">AI正在生成...</div>
+    </div>
 
-      <div class="input-area">
-        <el-input
-          v-model="inputMessage"
-          placeholder="输入您的问题..."
-          @keyup.enter="handleSend"
-          :disabled="isLoading"
-        />
-        <el-button type="primary" @click="handleSend" :loading="isLoading">发送</el-button>
-      </div>
+    <div class="input-area">
+      <input
+        v-model="input"
+        placeholder="输入您的问题"
+        @keyup.enter="sendMessage"
+        :disabled="loading"
+      />
+      <button @click="sendMessage" :disabled="loading">
+        {{ loading ? '生成中...' : '发送' }}
+      </button>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { User, ChatLineRound } from '@element-plus/icons-vue'
-
-// 固定API配置
-const API_CONFIG = {
-  apiKey: '1c2d1b65-e1bb-4a4a-8a07-6ed162435bde',
-  baseURL: 'https://ark.cn-beijing.volces.com/api/v3'
-}
-
-// 对话状态
-const conversation = ref(JSON.parse(localStorage.getItem('conversation')) || [])
-const isLoading = ref(false)
-const inputMessage = ref('')
-
-// 初始化加载历史记录
-onMounted(() => {
-  const saved = localStorage.getItem('conversation')
-  if (saved) conversation.value = JSON.parse(saved)
-})
-
-// 流式请求处理
-const handleSend = async () => {
-  if (!inputMessage.value.trim()) return
-  isLoading.value = true
-  conversation.value.push({ role: 'user', content: inputMessage.value })
-  
-  try {
-    const controller = new AbortController()
-    const response = await fetch(`${API_CONFIG.baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_CONFIG.apiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: conversation.value,
-        temperature: 0.7,
-        stream: true
-      }),
-      signal: controller.signal
-    })
-
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let aiResponseContent = ''
-    conversation.value.push({ role: 'assistant', content: aiResponseContent })
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      const chunk = decoder.decode(value)
-      const lines = chunk.split('\n').filter(line => line.trim() !== '')
+<script>
+export default {
+  data() {
+    return {
+      history: JSON.parse(localStorage.getItem('chatHistory')) || [],
+      input: '',
+      loading: false,
+      controller: null
+    }
+  },
+  methods: {
+    async sendMessage() {
+      if (!this.input.trim() || this.loading) return
       
-      for (const line of lines) {
-        const message = line.replace(/^data: /, '')
-        if (message === '[DONE]') break
-        
-        try {
-          const parsed = JSON.parse(message)
-          const content = parsed.choices[0]?.delta?.content
-          if (content) {
-            aiResponseContent += content
-            conversation.value[conversation.value.length - 1].content = aiResponseContent
-          }
-        } catch (err) {
-          console.error('解析错误:', err)
+      this.loading = true
+      this.history.push({ role: 'user', content: this.input })
+      this.history.push({ role: 'assistant', content: '' })
+      
+      try {
+        this.controller = new AbortController()
+        const response = await fetch('https://www.huanswurst.top/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "system",
+                content: ""
+              },
+              ...this.history.filter(m => m.role !== 'assistant')
+            ],
+            stream: true
+          }),
+          signal: this.controller.signal
+        })
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let assistantIndex = this.history.length - 1
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n').filter(l => l.startsWith('data: '))
+          
+          lines.forEach(line => {
+            try {
+              const data = JSON.parse(line.replace('data: ', ''))
+              if (data.choices?.[0]?.delta?.content) {
+                this.history[assistantIndex].content += data.choices[0].delta.content
+              }
+            } catch (e) {
+              console.warn('解析错误:', e)
+            }
+          })
         }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          this.history[assistantIndex].content = '请求失败，请重试'
+        }
+      } finally {
+        this.loading = false
+        this.input = ''
+        localStorage.setItem('chatHistory', JSON.stringify(this.history))
       }
     }
-  } catch (error) {
-    console.error('API请求失败:', error)
-    conversation.value.push({ role: 'assistant', content: '服务暂时不可用，请稍后再试' })
-  } finally {
-    isLoading.value = false
-    inputMessage.value = ''
-    localStorage.setItem('conversation', JSON.stringify(conversation.value))
+  },
+  beforeUnmount() {
+    if (this.controller) {
+      this.controller.abort()
+    }
   }
 }
 </script>
 
 <style>
-.app {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
 .chat-container {
-  border: 1px solid #e4e7ed;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  background: white;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .messages {
   height: 60vh;
   overflow-y: auto;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #f8f9fa;
+  border: 1px solid #eee;
   border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
 }
 
 .message {
   display: flex;
-  margin: 1rem 0;
-  gap: 1rem;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  gap: 12px;
+  margin: 15px 0;
 }
 
 .message.user {
@@ -151,60 +129,63 @@ const handleSend = async () => {
 }
 
 .avatar {
-  flex-shrink: 0;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #409eff;
-  color: white;
+  background: #f0f0f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-}
-
-.assistant .avatar {
-  background: #67c23a;
+  flex-shrink: 0;
 }
 
 .content {
-  max-width: 75%;
-  padding: 12px 16px;
+  max-width: 70%;
+  padding: 12px;
   border-radius: 12px;
   line-height: 1.6;
-  font-size: 15px;
 }
 
-.assistant .content {
-  background: white;
-  border: 1px solid #e4e7ed;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-}
-
-.user .content {
+.message.user .content {
   background: #409eff;
   color: white;
-  box-shadow: 0 2px 8px rgba(64,158,255,0.2);
+}
+
+.message.assistant .content {
+  background: #f8f9fa;
+  border: 1px solid #eee;
 }
 
 .input-area {
   display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 10px;
+}
+
+input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+button {
+  padding: 12px 24px;
+  background: #409eff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #a0cfff;
+  cursor: not-allowed;
 }
 
 .loading {
-  color: #909399;
+  color: #666;
   text-align: center;
-  padding: 1rem;
-  font-size: 14px;
-}
-
-.el-input {
-  flex-grow: 1;
-}
-
-.el-button {
-  width: 100px;
+  padding: 10px;
 }
 </style>
