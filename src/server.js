@@ -24,7 +24,7 @@ app.post('/api/chat', async (req, res) => {
       },
       data: {
         ...req.body,
-        model: "ep-20250211152754-cf5f4" // 你的模型ID
+        model: "ep-20250214164658-m9cgv" // 你的模型ID
       }
     })
     
