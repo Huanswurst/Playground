@@ -74,10 +74,10 @@ import * as faceapi from 'face-api.js'
 const CONFIG = {
   MODEL_PATH: '/models',
   DETECTION_INTERVAL: 150, // 毫秒
-  MIN_CONFIDENCE: 0.8,     // 最小置信度
-  API_ENDPOINTS: {
-    VERIFY: '/api/attendance/verify'
-  }
+  MIN_CONFIDENCE: 0.8    // 最小置信度
+  //API_ENDPOINTS: {
+  //  VERIFY: '/api/attendance/verify'
+  //}
 }
 
 // 响应式引用
