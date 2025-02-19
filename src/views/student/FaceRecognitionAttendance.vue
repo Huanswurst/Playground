@@ -63,11 +63,10 @@ const mediaStream = ref(null)
 const currentCameraIndex = ref(0)
 const cameraDevices = ref([])
 const recognitionResult = ref("")
-let animationFrameId = null
+let detectionTimeoutId = null
 
 // 加载 face-api.js 模型
 const loadFaceApiModels = async () => {
-  // 修改模型路径为绝对路径"/models"，确保访问的是JSON模型数据，而非返回HTML页面
   const modelUrl = '/models'
   try {
     await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl)
@@ -100,7 +99,7 @@ const handleCameraError = (error) => {
 // 启动摄像头
 const startCamera = async () => {
   try {
-    // 检查是否为安全连接（仅HTTPS下允许摄像头访问）
+    // 检查是否为安全连接（HTTPS或localhost下允许摄像头访问）
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       recognitionResult.value = "请使用HTTPS或localhost访问以启用摄像头功能"
       return
@@ -123,7 +122,7 @@ const startCamera = async () => {
     mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
     video.value.srcObject = mediaStream.value
     
-    // 处理视频加载完成后的逻辑
+    // 视频加载完成后处理逻辑
     video.value.onloadedmetadata = () => {
       adjustCanvasSize()
       video.value.play()
@@ -137,12 +136,10 @@ const startCamera = async () => {
 // 调整画布尺寸（处理设备像素比）
 const adjustCanvasSize = () => {
   if (!video.value) return
-  const dpr = window.devicePixelRatio || 1
   const videoWidth = video.value.videoWidth
   const videoHeight = video.value.videoHeight
-
   if (overlay.value && canvas.value) {
-    // 设置实际画布尺寸
+    // 设置实际画布尺寸（像素级）
     overlay.value.width = videoWidth
     overlay.value.height = videoHeight
     canvas.value.width = videoWidth
@@ -163,24 +160,43 @@ const switchCamera = async () => {
   await startCamera()
 }
 
-// 人脸检测帧循环
+// 人脸检测循环，降低检测频率
 const detectFrame = async () => {
-  if (!video.value || video.value.readyState !== 4) return
+  if (!video.value || video.value.readyState !== 4) {
+    scheduleNextDetection()
+    return
+  }
   
-  const detections = await faceapi.detectAllFaces(
-    video.value,
-    new faceapi.TinyFaceDetectorOptions({ inputSize: 320 })
-  )
+  try {
+    const detections = await faceapi.detectAllFaces(
+      video.value,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 320 })
+    )
+    drawDetectionBox(detections)
+  } catch (error) {
+    console.error("检测错误：", error)
+  }
   
-  drawDetectionBox(detections)
-  animationFrameId = requestAnimationFrame(detectFrame)
+  scheduleNextDetection()
 }
 
-// 绘制检测框（处理坐标转换）
+// 调度下一次检测（200ms 后）
+const scheduleNextDetection = () => {
+  detectionTimeoutId = setTimeout(() => {
+    detectFrame()
+  }, 200)
+}
+
+// 绘制检测框，使用 canvas transform 完成水平翻转
 const drawDetectionBox = (detections) => {
   if (!overlay.value) return
   const ctx = overlay.value.getContext("2d")
+  // 清空画布并保存状态
   ctx.clearRect(0, 0, overlay.value.width, overlay.value.height)
+  ctx.save()
+  // 设置水平翻转：先沿 x 轴缩放 -1，再平移画布宽度
+  ctx.scale(-1, 1)
+  ctx.translate(-overlay.value.width, 0)
   
   if (detections.length > 0) {
     const resizedDetections = faceapi.resizeResults(
@@ -195,18 +211,20 @@ const drawDetectionBox = (detections) => {
       ctx.strokeStyle = "red"
       ctx.rect(box.x, box.y, box.width, box.height)
       ctx.stroke()
-      
+
       ctx.font = 'bold 24px Arial'
       ctx.fillStyle = 'red'
       ctx.fillText(`匹配度: ${(det.score * 100).toFixed(1)}%`, box.x + 5, box.y - 10)
     })
   }
+  // 恢复状态
+  ctx.restore()
 }
 
 // 开始人脸识别（示例功能）
 const startRecognition = async () => {
   recognitionResult.value = "正在识别，请稍候..."
-  // 此处可加入调用API进行人脸识别的逻辑，以下为模拟效果
+  // 此处可加入调用 API 进行人脸识别的逻辑，以下为模拟效果
   setTimeout(() => {
     recognitionResult.value = "识别成功：学生信息匹配"
   }, 2000)
@@ -220,7 +238,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  if (animationFrameId) cancelAnimationFrame(animationFrameId)
+  if (detectionTimeoutId) clearTimeout(detectionTimeoutId)
   if (mediaStream.value) {
     mediaStream.value.getTracks().forEach(track => track.stop())
   }
@@ -265,7 +283,7 @@ onBeforeUnmount(() => {
   max-width: 640px;
   height: auto;
   aspect-ratio: 4 / 3;
-  transform: scaleX(-1); /* 镜像翻转 */
+  transform: scaleX(-1); /* 视频镜像 */
 }
 
 .overlay-canvas {
