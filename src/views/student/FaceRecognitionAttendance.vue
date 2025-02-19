@@ -99,7 +99,7 @@ const handleCameraError = (error) => {
 // 启动摄像头
 const startCamera = async () => {
   try {
-    // 检查是否为安全连接（HTTPS或localhost下允许摄像头访问）
+    // 检查是否为安全连接（HTTPS 或 localhost 下允许摄像头访问）
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       recognitionResult.value = "请使用HTTPS或localhost访问以启用摄像头功能"
       return
@@ -145,7 +145,7 @@ const adjustCanvasSize = () => {
     canvas.value.width = videoWidth
     canvas.value.height = videoHeight
 
-    // 设置CSS显示尺寸
+    // 设置 CSS 显示尺寸
     overlay.value.style.width = `${video.value.clientWidth}px`
     overlay.value.style.height = `${video.value.clientHeight}px`
   }
@@ -160,7 +160,7 @@ const switchCamera = async () => {
   await startCamera()
 }
 
-// 人脸检测循环，降低检测频率
+// 人脸检测循环，降低检测频率（200ms 后检测一次）
 const detectFrame = async () => {
   if (!video.value || video.value.readyState !== 4) {
     scheduleNextDetection()
@@ -180,14 +180,14 @@ const detectFrame = async () => {
   scheduleNextDetection()
 }
 
-// 调度下一次检测（200ms 后）
+// 调度下一次检测
 const scheduleNextDetection = () => {
   detectionTimeoutId = setTimeout(() => {
     detectFrame()
   }, 200)
 }
 
-// 绘制检测框，不进行水平翻转
+// 绘制检测框，缩小红框尺寸至原来的80%
 const drawDetectionBox = (detections) => {
   if (!overlay.value) return
   const ctx = overlay.value.getContext("2d")
@@ -201,15 +201,22 @@ const drawDetectionBox = (detections) => {
     
     resizedDetections.forEach(det => {
       const box = det.box
+      // 采用缩小80%的比例
+      const factor = 0.8
+      const newWidth = box.width * factor
+      const newHeight = box.height * factor
+      const newX = box.x + (box.width - newWidth) / 2
+      const newY = box.y + (box.height - newHeight) / 2
+
       ctx.beginPath()
       ctx.lineWidth = 4
       ctx.strokeStyle = "red"
-      ctx.rect(box.x, box.y, box.width, box.height)
+      ctx.rect(newX, newY, newWidth, newHeight)
       ctx.stroke()
 
       ctx.font = 'bold 24px Arial'
       ctx.fillStyle = 'red'
-      ctx.fillText(`匹配度: ${(det.score * 100).toFixed(1)}%`, box.x + 5, box.y - 10)
+      ctx.fillText(`匹配度: ${(det.score * 100).toFixed(1)}%`, newX + 5, newY - 10)
     })
   }
 }
@@ -261,7 +268,7 @@ onBeforeUnmount(() => {
 /* 摄像头卡片样式 */
 .camera-card {
   margin: 24px auto;
-  max-width: 600px; /* 缩小整体卡片宽度 */
+  max-width: 800px;
   padding: 16px;
   position: relative;
 }
@@ -273,10 +280,9 @@ onBeforeUnmount(() => {
 
 .camera-video {
   width: 100%;
-  max-width: 480px; /* 缩小视频尺寸 */
+  max-width: 640px;
   height: auto;
   aspect-ratio: 4 / 3;
-  /* 取消水平翻转 */
 }
 
 .overlay-canvas {
