@@ -67,9 +67,15 @@ let animationFrameId = null
 
 // 加载 face-api.js 模型
 const loadFaceApiModels = async () => {
-  const modelUrl = import.meta.env.DEV ? '/models' : './models'
-  await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl)
-  await faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl)
+  // 修改模型路径为绝对路径"/models"，确保访问的是JSON模型数据，而非返回HTML页面
+  const modelUrl = '/models'
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl)
+    await faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl)
+  } catch (error) {
+    recognitionResult.value = "加载模型失败：" + (error.message || error)
+    console.error("加载模型错误：", error)
+  }
 }
 
 // 获取摄像头设备列表
@@ -95,8 +101,8 @@ const handleCameraError = (error) => {
 const startCamera = async () => {
   try {
     // 检查是否为安全连接（仅HTTPS下允许摄像头访问）
-    if (location.protocol !== 'https:') {
-      recognitionResult.value = "请使用HTTPS访问本网站以启用摄像头功能"
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      recognitionResult.value = "请使用HTTPS或localhost访问以启用摄像头功能"
       return
     }
     
