@@ -187,16 +187,11 @@ const scheduleNextDetection = () => {
   }, 200)
 }
 
-// 绘制检测框，使用 canvas transform 完成水平翻转
+// 绘制检测框，不进行水平翻转
 const drawDetectionBox = (detections) => {
   if (!overlay.value) return
   const ctx = overlay.value.getContext("2d")
-  // 清空画布并保存状态
   ctx.clearRect(0, 0, overlay.value.width, overlay.value.height)
-  ctx.save()
-  // 设置水平翻转：先沿 x 轴缩放 -1，再平移画布宽度
-  ctx.scale(-1, 1)
-  ctx.translate(-overlay.value.width, 0)
   
   if (detections.length > 0) {
     const resizedDetections = faceapi.resizeResults(
@@ -217,8 +212,6 @@ const drawDetectionBox = (detections) => {
       ctx.fillText(`匹配度: ${(det.score * 100).toFixed(1)}%`, box.x + 5, box.y - 10)
     })
   }
-  // 恢复状态
-  ctx.restore()
 }
 
 // 开始人脸识别（示例功能）
@@ -268,7 +261,7 @@ onBeforeUnmount(() => {
 /* 摄像头卡片样式 */
 .camera-card {
   margin: 24px auto;
-  max-width: 800px;
+  max-width: 600px; /* 缩小整体卡片宽度 */
   padding: 16px;
   position: relative;
 }
@@ -280,10 +273,10 @@ onBeforeUnmount(() => {
 
 .camera-video {
   width: 100%;
-  max-width: 640px;
+  max-width: 480px; /* 缩小视频尺寸 */
   height: auto;
   aspect-ratio: 4 / 3;
-  transform: scaleX(-1); /* 视频镜像 */
+  /* 取消水平翻转 */
 }
 
 .overlay-canvas {
