@@ -102,8 +102,7 @@ const loadFaceApiModels = async () => {
   try {
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(CONFIG.MODEL_PATH),
-      faceapi.nets.faceLandmark68Net.loadFromUri(CONFIG.MODEL_PATH),
-      faceapi.nets.faceRecognitionNet.loadFromUri(CONFIG.MODEL_PATH)
+      faceapi.nets.faceLandmark68Net.loadFromUri(CONFIG.MODEL_PATH)
     ])
   } catch (error) {
     handleError('模型加载失败', error)
