@@ -9,7 +9,7 @@
         <h1 class="header-title">人脸识别考勤</h1>
       </div>
     </el-header>
-      
+    
     <el-main>
       <el-card class="camera-card" shadow="hover">
         <div class="camera-section">
@@ -168,10 +168,12 @@ const detectFrame = async () => {
   }
   
   try {
+    // 使用 withFaceLandmarks() 返回人脸检测及关键点
     const detections = await faceapi.detectAllFaces(
       video.value,
       new faceapi.TinyFaceDetectorOptions({ inputSize: 320 })
-    )
+    ).withFaceLandmarks()
+    
     drawDetectionBox(detections)
   } catch (error) {
     console.error("检测错误：", error)
@@ -187,7 +189,7 @@ const scheduleNextDetection = () => {
   }, 200)
 }
 
-// 绘制检测框，缩小红框尺寸至原来的80%
+// 绘制检测框：调整位置使得红框中央偏上，靠近鼻子
 const drawDetectionBox = (detections) => {
   if (!overlay.value) return
   const ctx = overlay.value.getContext("2d")
@@ -200,14 +202,17 @@ const drawDetectionBox = (detections) => {
     )
     
     resizedDetections.forEach(det => {
-      const box = det.box
-      // 采用缩小80%的比例
+      const box = det.detection.box
+      // 以80%缩放显示红框
       const factor = 0.8
       const newWidth = box.width * factor
       const newHeight = box.height * factor
+      // 计算新的 x 坐标（水平居中）
       const newX = box.x + (box.width - newWidth) / 2
-      const newY = box.y + (box.height - newHeight) / 2
-
+      // 计算新的 y 坐标，向上偏移一定比例，默认上移15%的box高度
+      const offset = 0.15 * box.height
+      const newY = box.y + (box.height - newHeight) / 2 - offset
+      
       ctx.beginPath()
       ctx.lineWidth = 4
       ctx.strokeStyle = "red"
@@ -216,7 +221,7 @@ const drawDetectionBox = (detections) => {
 
       ctx.font = 'bold 24px Arial'
       ctx.fillStyle = 'red'
-      ctx.fillText(`匹配度: ${(det.score * 100).toFixed(1)}%`, newX + 5, newY - 10)
+      ctx.fillText(`匹配度: ${(det.detection.score * 100).toFixed(1)}%`, newX + 5, newY - 10)
     })
   }
 }
@@ -224,7 +229,7 @@ const drawDetectionBox = (detections) => {
 // 开始人脸识别（示例功能）
 const startRecognition = async () => {
   recognitionResult.value = "正在识别，请稍候..."
-  // 此处可加入调用 API 进行人脸识别的逻辑，以下为模拟效果
+  // 此处可加入调用 API 进行人脸识别的逻辑；以下为模拟效果
   setTimeout(() => {
     recognitionResult.value = "识别成功：学生信息匹配"
   }, 2000)
