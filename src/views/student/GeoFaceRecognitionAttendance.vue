@@ -222,11 +222,17 @@ const calculateFinalLocation = (browserLoc, amapLoc) => {
 
 const initAMap = async () => {
   try {
-    const AMap = await AMapLoader.load({
-      key: AMAP_KEY,
-      version: '2.0',
-      plugins: ['AMap.Geolocation', 'AMap.Marker']
+    // 动态创建script标签加载高德地图API
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}&plugin=AMap.Geolocation,AMap.Marker`
+      script.onload = resolve
+      script.onerror = reject
+      document.head.appendChild(script)
     })
+    
+    // 初始化AMap
+    const AMap = window.AMap
 
     // 初始化地图
     map.value = new AMap.Map(mapContainer.value, {
