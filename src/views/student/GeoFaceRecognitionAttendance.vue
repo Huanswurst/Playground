@@ -343,6 +343,28 @@ const getLocation = async () => {
 }
 
 // 开始人脸识别
+// 切换摄像头
+const switchCamera = async () => {
+  try {
+    if (mediaStream.value) {
+      mediaStream.value.getTracks().forEach(track => track.stop())
+    }
+    
+    isFrontCamera.value = !isFrontCamera.value
+    const constraints = {
+      video: {
+        facingMode: isFrontCamera.value ? 'user' : 'environment'
+      }
+    }
+    
+    mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
+    video.value.srcObject = mediaStream.value
+  } catch (error) {
+    console.error('切换摄像头失败:', error)
+    cameraError.value = '切换摄像头失败'
+  }
+}
+
 const startRecognition = async () => {
   try {
     // 先获取位置
