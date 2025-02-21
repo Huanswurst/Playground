@@ -4,7 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth import authenticate, login, logout
-from .models import *
+from .models import User, Student, Staff, Course, AttendanceEvent, AttendanceRecord, CourseParticipant
 from .serializers import *
 
 # Authentication views
@@ -47,15 +47,10 @@ def logout_view(request):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 # Admin views
-class AttendanceManagementViewSet(viewsets.ModelViewSet):
+class StaffManagementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
-    queryset = Attendance.objects.all()
-    serializer_class = AttendanceSerializer
-
-class ClassManagementViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdminUser]
-    queryset = Class.objects.all()
-    serializer_class = ClassSerializer
+    queryset = Staff.objects.all()
+    serializer_class = StaffSerializer
 
 class CourseManagementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
@@ -67,10 +62,20 @@ class StudentManagementViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
 
-class TeacherManagementViewSet(viewsets.ModelViewSet):
+class AttendanceEventManagementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
-    queryset = Teacher.objects.all()
-    serializer_class = TeacherSerializer
+    queryset = AttendanceEvent.objects.all()
+    serializer_class = AttendanceEventSerializer
+
+class AttendanceRecordManagementViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = AttendanceRecord.objects.all()
+    serializer_class = AttendanceRecordSerializer
+
+class CourseParticipantManagementViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = CourseParticipant.objects.all()
+    serializer_class = CourseParticipantSerializer
 
 # Teacher views
 class TeacherCourseViewSet(viewsets.ModelViewSet):
@@ -78,14 +83,41 @@ class TeacherCourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
 
     def get_queryset(self):
-        return Course.objects.filter(teacher=self.request.user)
+        return Course.objects.filter(
+            courseparticipant__user=self.request.user,
+            courseparticipant__role='teacher'
+        )
 
-class TeacherAttendanceViewSet(viewsets.ModelViewSet):
+class TeacherAttendanceEventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    serializer_class = AttendanceSerializer
+    serializer_class = AttendanceEventSerializer
 
     def get_queryset(self):
-        return Attendance.objects.filter(course__teacher=self.request.user)
+        return AttendanceEvent.objects.filter(
+            course__courseparticipant__user=self.request.user,
+            course__courseparticipant__role='teacher'
+        )
+
+# Student views
+class StudentCourseViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CourseSerializer
+
+    def get_queryset(self):
+        return Course.objects.filter(
+            courseparticipant__user=self.request.user,
+            courseparticipant__role='student'
+        )
+
+class StudentAttendanceEventViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AttendanceEventSerializer
+
+    def get_queryset(self):
+        return AttendanceEvent.objects.filter(
+            course__courseparticipant__user=self.request.user,
+            course__courseparticipant__role='student'
+        )
 
 # Test API
 @api_view(['GET'])

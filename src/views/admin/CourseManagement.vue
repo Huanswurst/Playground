@@ -95,7 +95,7 @@
               <el-input v-model="searchQuery" placeholder="搜索课程名称或代码"></el-input>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSearch">查询</el-button>
+              <el-button type="primary" @click="fetchCourses">查询</el-button>
             </el-form-item>
             <el-form-item>
               <el-button type="success" @click="addCourse">添加课程</el-button>
@@ -104,13 +104,11 @@
         </div>
 
         <!-- 课程表格 -->
-        <el-table :data="courses" style="width: 100%">
-          <el-table-column prop="id" label="ID" width="80"></el-table-column>
-          <el-table-column prop="name" label="课程名称"></el-table-column>
-          <el-table-column prop="code" label="课程代码"></el-table-column>
-          <el-table-column prop="credit" label="学分"></el-table-column>
-          <el-table-column prop="teacher" label="授课教师"></el-table-column>
-          <el-table-column prop="time" label="上课时间"></el-table-column>
+        <el-table :data="courses" v-loading="loading" style="width: 100%">
+          <el-table-column prop="course_code" label="课程代码"></el-table-column>
+          <el-table-column prop="course_name" label="课程名称"></el-table-column>
+          <el-table-column prop="academic_year" label="学年"></el-table-column>
+          <el-table-column prop="semester" label="学期"></el-table-column>
           <el-table-column label="操作" width="150">
             <template #default="scope">
               <el-button type="text" size="small" @click="editCourse(scope.row)">编辑</el-button>
@@ -131,29 +129,20 @@
         <!-- 课程编辑对话框 -->
         <el-dialog :title="dialogTitle" v-model="dialogVisible">
           <el-form :model="currentCourse">
-            <el-form-item label="课程名称">
-              <el-input v-model="currentCourse.name"></el-input>
-            </el-form-item>
             <el-form-item label="课程代码">
-              <el-input v-model="currentCourse.code"></el-input>
+              <el-input v-model="currentCourse.course_code"></el-input>
             </el-form-item>
-            <el-form-item label="学分">
-              <el-input-number v-model="currentCourse.credit" :min="1" :max="10"></el-input-number>
+            <el-form-item label="课程名称">
+              <el-input v-model="currentCourse.course_name"></el-input>
             </el-form-item>
-            <el-form-item label="授课教师">
-              <el-select v-model="currentCourse.teacher" placeholder="请选择">
-                <el-option label="张三" value="张三"></el-option>
-                <el-option label="李四" value="李四"></el-option>
-                <el-option label="王五" value="王五"></el-option>
+            <el-form-item label="学年">
+              <el-input-number v-model="currentCourse.academic_year" :min="2000" :max="2100"></el-input-number>
+            </el-form-item>
+            <el-form-item label="学期">
+              <el-select v-model="currentCourse.semester" placeholder="请选择">
+                <el-option label="春季" value="spring"></el-option>
+                <el-option label="秋季" value="fall"></el-option>
               </el-select>
-            </el-form-item>
-            <el-form-item label="上课时间">
-              <el-time-picker
-                v-model="currentCourse.time"
-                format="HH:mm"
-                value-format="HH:mm"
-                placeholder="选择时间"
-              ></el-time-picker>
             </el-form-item>
           </el-form>
           <template #footer>
@@ -167,9 +156,9 @@
 </template>
 
 <script setup>
-import { Menu as IconMenu, Setting, Expand, Fold, Plus, Folder, Avatar, Document } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
+import axios from 'axios'
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {
@@ -177,57 +166,44 @@ const toggleSidebar = () => {
 }
 
 const searchQuery = ref('')
-const courses = ref([
-  {
-    id: 1,
-    name: '数据结构',
-    code: 'CS101',
-    credit: 3,
-    teacher: '张三',
-    time: '08:00'
-  },
-  {
-    id: 2,
-    name: '操作系统',
-    code: 'CS102',
-    credit: 4,
-    teacher: '李四',
-    time: '10:00'
-  },
-  {
-    id: 3,
-    name: '计算机网络',
-    code: 'CS103',
-    credit: 3,
-    teacher: '王五',
-    time: '14:00'
-  }
-])
-const total = ref(100)
+const courses = ref([])
+const total = ref(0)
 const pageSize = ref(10)
+const currentPage = ref(1)
+const loading = ref(false)
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加课程')
 const currentCourse = ref({
-  id: null,
-  name: '',
-  code: '',
-  credit: 1,
-  teacher: '',
-  time: ''
+  course_code: '',
+  course_name: '',
+  academic_year: new Date().getFullYear(),
+  semester: 'spring'
 })
 
-const handleSearch = () => {
-  console.log('搜索课程', searchQuery.value)
+const fetchCourses = async () => {
+  loading.value = true
+  try {
+    const response = await axios.get('/api/admin/courses/', {
+      params: {
+        search: searchQuery.value,
+        page: currentPage.value
+      }
+    })
+    courses.value = response.data.results
+    total.value = response.data.count
+  } catch (error) {
+    console.error('获取课程列表失败:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
 const addCourse = () => {
   currentCourse.value = {
-    id: null,
-    name: '',
-    code: '',
-    credit: 1,
-    teacher: '',
-    time: ''
+    course_code: '',
+    course_name: '',
+    academic_year: new Date().getFullYear(),
+    semester: 'spring'
   }
   dialogTitle.value = '添加课程'
   dialogVisible.value = true
@@ -239,32 +215,45 @@ const editCourse = (course) => {
   dialogVisible.value = true
 }
 
-const deleteCourse = (course) => {
-  ElMessageBox.confirm('确定删除该课程吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    courses.value = courses.value.filter(c => c.id !== course.id)
-  })
+const deleteCourse = async (course) => {
+  try {
+    await ElMessageBox.confirm('确定删除该课程吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await axios.delete(`/api/admin/courses/${course.course_id}/`)
+    await fetchCourses()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除课程失败:', error)
+    }
+  }
 }
 
-const confirmCourse = () => {
-  if (currentCourse.value.id) {
-    // 编辑课程
-    const index = courses.value.findIndex(c => c.id === currentCourse.value.id)
-    courses.value.splice(index, 1, currentCourse.value)
-  } else {
-    // 添加课程
-    currentCourse.value.id = courses.value.length + 1
-    courses.value.push(currentCourse.value)
+const confirmCourse = async () => {
+  try {
+    if (currentCourse.value.course_id) {
+      // 编辑课程
+      await axios.put(`/api/admin/courses/${currentCourse.value.course_id}/`, currentCourse.value)
+    } else {
+      // 添加课程
+      await axios.post('/api/admin/courses/', currentCourse.value)
+    }
+    dialogVisible.value = false
+    await fetchCourses()
+  } catch (error) {
+    console.error('保存课程失败:', error)
   }
-  dialogVisible.value = false
 }
 
 const handlePageChange = (page) => {
-  console.log('切换页码', page)
+  currentPage.value = page
+  fetchCourses()
 }
+
+// 初始化时获取课程列表
+fetchCourses()
 </script>
 
 <style scoped>
