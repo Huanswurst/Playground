@@ -91,7 +91,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { Calendar, Switch, Camera } from '@element-plus/icons-vue'
+import { Calendar, Switch, Camera, Location } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 const AMAP_KEY = 'ff4dd4814f31d1e9122f1032f39ce9d9'
