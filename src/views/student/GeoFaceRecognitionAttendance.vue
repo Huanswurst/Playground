@@ -34,6 +34,12 @@
               <el-icon><Switch /></el-icon>
               <span>切换摄像头</span>
             </el-button>
+            <!-- 获取位置按钮 -->
+            <el-button type="warning" @click="getLocation" class="control-button">
+              <el-icon><Location /></el-icon>
+              <span>获取位置</span>
+            </el-button>
+            
             <!-- 开始识别按钮 -->
             <el-button type="success" @click="startRecognition" class="control-button">
               <el-icon><Camera /></el-icon>
@@ -299,8 +305,8 @@ onMounted(async () => {
   }
 })
 
-// 在用户点击开始识别时获取定位
-const startRecognition = async () => {
+// 获取定位
+const getLocation = async () => {
   try {
     locationStatus.value = '正在获取位置...'
     locationStatusType.value = 'info'
@@ -326,14 +332,29 @@ const startRecognition = async () => {
         offset: new AMap.Pixel(-13, -30)
       })
       marker.value.setMap(map.value)
-      
-      // 在这里添加人脸识别逻辑
-      // ...
     }
+    return finalLocation
   } catch (error) {
     console.error('定位失败:', error)
     locationStatus.value = `定位失败: ${error.message || '未知错误'}`
     locationStatusType.value = 'error'
+    throw error
+  }
+}
+
+// 开始人脸识别
+const startRecognition = async () => {
+  try {
+    // 先获取位置
+    const location = await getLocation()
+    
+    if (location) {
+      // 在这里添加人脸识别逻辑
+      // ...
+    }
+  } catch (error) {
+    console.error('识别失败:', error)
+    recognitionResult.value = '识别失败，请重试'
   }
 }
 
