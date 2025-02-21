@@ -256,7 +256,25 @@ const initAMap = async () => {
     isMapLoading.value = false
   } catch (error) {
     console.error('地图加载失败:', error)
-    locationStatus.value = '地图加载失败'
+    locationStatus.value = `地图加载失败: ${error.message || '未知错误'}`
+    locationStatusType.value = 'error'
+    
+    // 尝试仅使用浏览器定位
+    try {
+      const browserLoc = await getBrowserLocation()
+      if (browserLoc) {
+        userLocation.value = browserLoc
+        locationStatus.value = '使用浏览器定位成功'
+        locationStatusType.value = 'success'
+        isMapLoading.value = false
+        return
+      }
+    } catch (browserError) {
+      console.error('浏览器定位失败:', browserError)
+    }
+    
+    // 如果都失败，显示详细错误信息
+    locationStatus.value = `定位失败: ${error.message || '未知错误'}`
     locationStatusType.value = 'error'
   }
 }
