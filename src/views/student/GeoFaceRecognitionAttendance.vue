@@ -279,9 +279,63 @@ const initAMap = async () => {
   }
 }
 
-onMounted(() => {
-  initAMap()
+// 初始化地图，但不立即获取定位
+onMounted(async () => {
+  try {
+    const AMap = await AMapLoader.load({
+      key: AMAP_KEY,
+      version: '2.0',
+      plugins: ['AMap.Geolocation', 'AMap.Marker']
+    })
+    map.value = new AMap.Map(mapContainer.value, {
+      zoom: 16,
+      resizeEnable: true
+    })
+    isMapLoading.value = false
+  } catch (error) {
+    console.error('地图初始化失败:', error)
+    locationStatus.value = '地图初始化失败'
+    locationStatusType.value = 'error'
+  }
 })
+
+// 在用户点击开始识别时获取定位
+const startRecognition = async () => {
+  try {
+    locationStatus.value = '正在获取位置...'
+    locationStatusType.value = 'info'
+    
+    // 获取定位
+    const [browserLoc, amapLoc] = await Promise.all([
+      getBrowserLocation(),
+      getAMapLocation(AMap)
+    ])
+    
+    const finalLocation = calculateFinalLocation(browserLoc, amapLoc)
+    
+    if (finalLocation) {
+      const center = [finalLocation.longitude, finalLocation.latitude]
+      map.value.setCenter(center)
+      userLocation.value = finalLocation
+      locationStatus.value = '定位成功'
+      locationStatusType.value = 'success'
+
+      marker.value = new AMap.Marker({
+        position: center,
+        icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png',
+        offset: new AMap.Pixel(-13, -30)
+      })
+      marker.value.setMap(map.value)
+      
+      // 在这里添加人脸识别逻辑
+      // ...
+    }
+  } catch (error) {
+    console.error('定位失败:', error)
+    locationStatus.value = `定位失败: ${error.message || '未知错误'}`
+    locationStatusType.value = 'error'
+  }
+}
 
 onBeforeUnmount(() => {
   if (map.value) {
