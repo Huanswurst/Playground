@@ -7,7 +7,7 @@ import StudentDashboard from '../views/student/dashboard.vue';
 import StudentAttendance from '../views/student/StudentAttendance.vue';
 import FaceRecognitionAttendance from '../views/student/FaceRecognitionAttendance.vue';
 import GeoFaceRecognitionAttendance from '../views/student/GeoFaceRecognitionAttendance.vue';
-import GeoFaceRecognitionAttendanceTest from '../views/student/PhotoRecognition.vue';
+import GeoFaceRecognitionAttendanceTest from '../views/student/GeoFaceRecognitionAttendanceTest.vue';
 /*import StudentCheckIn from '../views/student/CheckIn.vue';
 import StudentCheckOut from '../views/student/CheckOut.vue';
 */
