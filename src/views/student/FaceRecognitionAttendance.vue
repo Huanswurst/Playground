@@ -278,10 +278,15 @@ const handleCameraError = (error) => {
 
 // 通用错误处理
 const handleError = (message, error) => {
+  let errorMessage = error.message || error
+  // 处理HTML格式的错误响应
+  if (typeof errorMessage === 'string' && errorMessage.startsWith('<!DOCTYPE')) {
+    errorMessage = '服务器返回了HTML错误页面，请检查API请求'
+  }
   console.error(error)
   ElNotification({
     title: '发生错误',
-    message: `${message}: ${error.message || error}`,
+    message: `${message}: ${errorMessage}`,
     type: 'error',
     duration: 5000
   })
