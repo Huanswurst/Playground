@@ -49,9 +49,18 @@ class StaffSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CourseSerializer(serializers.ModelSerializer):
+    studentCount = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Course
         fields = '__all__'
+        extra_fields = ['studentCount']
+
+    def get_field_names(self, declared_fields, info):
+        expanded_fields = super().get_field_names(declared_fields, info)
+        if getattr(self.Meta, 'extra_fields', None):
+            return expanded_fields + self.Meta.extra_fields
+        return expanded_fields
 
 class AttendanceEventSerializer(serializers.ModelSerializer):
     course = CourseSerializer(read_only=True)

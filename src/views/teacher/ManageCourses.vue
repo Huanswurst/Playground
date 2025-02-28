@@ -78,18 +78,33 @@
             stripe
             style="width: 100%"
             :default-sort="{ prop: 'courseName', order: 'ascending' }"
+            v-loading="loading"
           >
             <el-table-column prop="courseName" label="课程名称" sortable />
             <el-table-column prop="teacherName" label="授课教师" sortable />
             <el-table-column prop="studentCount" label="学生人数" sortable />
             <el-table-column label="操作" width="200">
               <template #default="{ row }">
+                <el-button type="primary" @click="handleViewStudents(row)">管理学生</el-button>
                 <el-button type="primary" @click="handleViewAttendance(row)">查看考勤</el-button>
                 <el-button type="danger" @click="handleDeleteCourse(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-card>
+
+        <!-- 学生管理对话框 -->
+        <el-dialog
+          v-model="studentDialogVisible"
+          :title="`${selectedCourse?.courseName} - 学生管理`"
+          width="60%"
+        >
+          <StudentManagement
+            v-if="studentDialogVisible"
+            :course="selectedCourse"
+            @close="studentDialogVisible = false"
+          />
+        </el-dialog>
       </el-main>
     </el-container>
   </el-container>
@@ -99,6 +114,8 @@
 import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+import StudentManagement from './StudentManagement.vue'
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {
@@ -108,34 +125,14 @@ const toggleSidebar = () => {
 const router = useRouter()
 const isMobile = ref(false)
 const searchQuery = ref('')
-const courseCount = ref(5)
-const studentCount = ref(120)
-const courses = ref([
-  {
-    id: 1,
-    courseName: '数学',
-    teacherName: '张老师',
-    studentCount: 50,
-  },
-  {
-    id: 2,
-    courseName: '英语',
-    teacherName: '李老师',
-    studentCount: 45,
-  },
-  {
-    id: 3,
-    courseName: '物理',
-    teacherName: '王老师',
-    studentCount: 40,
-  },
-  {
-    id: 4,
-    courseName: '化学',
-    teacherName: '赵老师',
-    studentCount: 35,
-  },
-])
+const courseCount = ref(0)
+const studentCount = ref(0)
+const courses = ref([])
+const loading = ref(false)
+
+// 学生管理相关状态
+const studentDialogVisible = ref(false)
+const selectedCourse = ref(null)
 
 // 计算属性
 const filteredCourses = computed(() => {
@@ -143,6 +140,21 @@ const filteredCourses = computed(() => {
     item.courseName.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 })
+
+// 获取课程列表
+const fetchCourses = async () => {
+  try {
+    loading.value = true
+    const response = await axios.get('/api/teacher_courses/')
+    courses.value = response.data
+    courseCount.value = courses.value.length
+    studentCount.value = courses.value.reduce((sum, course) => sum + course.studentCount, 0)
+  } catch (error) {
+    console.error('获取课程列表失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
 // 方法
 const checkDevice = () => {
@@ -165,19 +177,29 @@ const handleAddCourse = () => {
   console.log('添加课程功能待实现')
 }
 
-const handleDeleteCourse = (row) => {
-  courses.value = courses.value.filter((course) => course !== row)
-  console.log('删除课程成功')
+const handleDeleteCourse = async (row) => {
+  try {
+    await axios.delete(`/api/courses/${row.id}/`)
+    await fetchCourses()
+  } catch (error) {
+    console.error('删除课程失败:', error)
+  }
 }
 
 const handleViewAttendance = (row) => {
   router.push({ name: 'CourseAttendance', params: { courseId: row.id } })
 }
 
+const handleViewStudents = (row) => {
+  selectedCourse.value = row
+  studentDialogVisible.value = true
+}
+
 // 生命周期钩子
 onMounted(() => {
   checkDevice()
   window.addEventListener('resize', checkDevice)
+  fetchCourses()
 })
 
 onBeforeUnmount(() => {
