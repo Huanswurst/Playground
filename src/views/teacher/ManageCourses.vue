@@ -34,6 +34,13 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">课程管理</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -120,6 +127,10 @@ import StudentManagement from './StudentManagement.vue'
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+const handleLogout = () => {
+  router.push('/login')
 }
 
 const router = useRouter()

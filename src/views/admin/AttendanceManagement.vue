@@ -42,6 +42,14 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">考勤管理系统</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+            style="margin-left: 15px"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -102,6 +110,12 @@ import { Menu as IconMenu, Setting, Expand, Fold, Document, Warning } from '@ele
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import config from '@/config'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {

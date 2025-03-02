@@ -85,6 +85,13 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">数据统计系统</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -120,6 +127,12 @@
 import { Menu as IconMenu, Setting, Expand, Fold, DataLine, TrendCharts, User, Avatar } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {

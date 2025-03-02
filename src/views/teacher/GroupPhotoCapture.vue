@@ -3,6 +3,13 @@
     <el-header class="dashboard-header">
       <div class="header-content">
         <h1 class="header-title">集体照拍摄</h1>
+        <el-button
+          type="danger"
+          class="logout-button"
+          @click="handleLogout"
+        >
+          退出登录
+        </el-button>
       </div>
     </el-header>
     
@@ -51,6 +58,12 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElNotification } from 'element-plus'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 import * as faceapi from 'face-api.js'
 
 const video = ref(null)

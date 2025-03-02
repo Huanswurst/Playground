@@ -85,6 +85,14 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">课程管理系统</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+            style="margin-left: 15px"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -159,6 +167,12 @@
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {

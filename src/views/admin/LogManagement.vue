@@ -85,6 +85,13 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">日志管理系统</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -139,6 +146,12 @@
 <script setup>
 import { Menu as IconMenu, Setting, Expand, Fold, User, Operation, Warning, Download } from '@element-plus/icons-vue'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {

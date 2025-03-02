@@ -34,6 +34,13 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">{{ course.courseName }} 考勤详情</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -109,7 +116,12 @@
 <script setup>
 import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {

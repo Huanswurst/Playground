@@ -85,6 +85,14 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">权限管理系统</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+            style="margin-left: 15px"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -145,6 +153,12 @@
 import { Menu as IconMenu, Setting, Expand, Fold, User, Avatar, Document } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 
 const isSidebarCollapsed = ref(false)
 const toggleSidebar = () => {

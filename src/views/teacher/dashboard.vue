@@ -65,6 +65,13 @@
             </el-icon>
           </el-button>
           <h1 class="header-title">教师首页</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+          >
+            退出登录
+          </el-button>
         </div>
       </el-header>
       <el-main>
@@ -135,8 +142,14 @@
 <script setup>
 import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const isSidebarCollapsed = ref(false)
+
+const handleLogout = () => {
+  router.push('/login')
+}
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
@@ -285,6 +298,11 @@ onBeforeUnmount(() => {
 .toggle-button {
   color: #409eff;
   padding: 0;
+  margin-right: 16px;
+}
+
+.logout-button {
+  margin-left: auto;
   margin-right: 16px;
 }
 

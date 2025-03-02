@@ -1,5 +1,19 @@
 <template>
-  <div class="student-management">
+  <el-container>
+    <el-header class="dashboard-header">
+      <div class="header-content">
+        <h1 class="header-title">学生管理</h1>
+        <el-button
+          type="danger"
+          class="logout-button"
+          @click="handleLogout"
+          style="margin-left: 15px"
+        >
+          退出登录
+        </el-button>
+      </div>
+    </el-header>
+    <div class="student-management">
     <el-row :gutter="20" class="mb-20">
       <el-col :span="12">
         <el-input
@@ -66,12 +80,19 @@
       </template>
     </el-dialog>
   </div>
+  </el-container>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const handleLogout = () => {
+  router.push('/login')
+}
 
 const props = defineProps({
   course: {

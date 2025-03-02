@@ -10,7 +10,15 @@
         >
           返回考勤
         </el-button>
-        <h1 class="header-title">人脸识别考勤</h1>
+          <h1 class="header-title">人脸识别考勤</h1>
+          <el-button
+            type="danger"
+            class="logout-button"
+            @click="handleLogout"
+            style="margin-left: 15px"
+          >
+            退出登录
+          </el-button>
       </div>
     </el-header>
     
