@@ -67,6 +67,13 @@ class Course(models.Model):
         ('spring', 'Spring'),
         ('fall', 'Fall')
     ])
+    students = models.ManyToManyField(
+        'Student', 
+        related_name='courses',
+        through='CourseParticipant',
+        through_fields=('course', 'user'),
+        blank=True
+    )
 
     def __str__(self):
         return f"{self.course_code} - {self.course_name}"

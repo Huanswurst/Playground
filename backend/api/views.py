@@ -56,4 +56,26 @@ def special_case_enrollment(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# 其他已有API保持不变...
+class CourseListAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        courses = Course.objects.annotate(
+            student_count=Count('students')
+        ).prefetch_related('students')
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
+class TeacherCourseListAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # 获取当前教师的所有课程
+        teacher_courses = Course.objects.filter(
+            Q(teacher=request.user) | 
+            Q(participants__user=request.user, participants__role='teacher')
+        ).distinct().annotate(
+            student_count=Count('students')
+        )
+        serializer = CourseSerializer(teacher_courses, many=True)
+        return Response(serializer.data)
