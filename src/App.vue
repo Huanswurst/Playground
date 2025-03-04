@@ -3,6 +3,15 @@
 </template>
 
 <script setup>
+import { getCurrentInstance } from 'vue';
+
+// 获取全局配置
+const { $config } = getCurrentInstance().appContext.config.globalProperties;
+
+// 设置全局API基础URL
+if ($config) {
+  console.log('API Base URL:', $config.apiClient.defaults.baseURL);
+}
 </script>
 
 <style>
