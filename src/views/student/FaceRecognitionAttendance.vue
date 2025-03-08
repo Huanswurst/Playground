@@ -300,24 +300,44 @@ const handleError = (message, error) => {
   })
 }
 
+// 手动释放摄像头资源
+const releaseCamera = () => {
+  stopDetectionLoop()
+  if (mediaStream.value) {
+    mediaStream.value.getTracks().forEach(track => {
+      track.stop()
+      track.enabled = false
+    })
+    mediaStream.value = null
+  }
+}
+
 // 生命周期钩子
 onMounted(async () => {
   try {
     await loadFaceApiModels()
     await initCamera()
     window.addEventListener('resize', adjustCanvasSize)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
   } catch (error) {
     recognitionResult.value = '初始化失败，请刷新页面重试'
   }
 })
 
 onBeforeUnmount(() => {
-  stopDetectionLoop()
-  if (mediaStream.value) {
-    mediaStream.value.getTracks().forEach(track => track.stop())
-  }
+  releaseCamera()
   window.removeEventListener('resize', adjustCanvasSize)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
+
+// 处理页面可见性变化
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    releaseCamera()
+  } else {
+    initCamera()
+  }
+}
 </script>
 
 <style scoped lang="scss">

@@ -161,7 +161,7 @@
         <!-- 学生管理对话框 -->
         <el-dialog
           v-model="studentDialogVisible"
-          :title="`${selectedCourse?.courseName} - 学生管理`"
+          :title="selectedCourse ? `${selectedCourse.courseName} - 学生管理` : '学生管理'"
           width="60%"
         >
           <StudentManagement
@@ -182,7 +182,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import StudentManagement from './StudentManagement.vue'
 
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(true)
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
@@ -277,6 +277,9 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* 复用 Dashboard 的样式 */
+@import './Dashboard.css';
+
 .attendance-sidebar {
   transition: width 0.3s ease;
 }
@@ -313,7 +316,4 @@ onBeforeUnmount(() => {
   padding: 0;
   margin-right: 16px;
 }
-
-/* 复用 Dashboard 的样式 */
-@import './Dashboard.css';
 </style>

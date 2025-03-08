@@ -84,6 +84,7 @@
                 @input="handleSearch"
               />
               <el-button type="primary" @click="handlePublishAttendance">发布考勤</el-button>
+              <el-button type="success" @click="exportAttendance">导出考勤</el-button>
             </div>
 
             <!-- 表格 -->
@@ -123,7 +124,7 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(true)
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
@@ -213,6 +214,29 @@ const fetchAttendanceData = async (courseId) => {
 
 const handleSearch = () => {
   // 搜索逻辑已在 computed 中实现
+}
+
+const exportAttendance = () => {
+  const headers = ['日期', '班级', '出勤率', '缺勤人数', '迟到人数']
+  const rows = attendanceData.value.map(item => [
+    item.date,
+    item.class,
+    `${item.attendanceRate}%`,
+    item.absentCount,
+    item.lateCount
+  ])
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n')
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `${course.value.courseName}_考勤记录.csv`
+  link.click()
+  URL.revokeObjectURL(link.href)
 }
 
 const handlePublishAttendance = async () => {

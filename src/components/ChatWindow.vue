@@ -20,23 +20,29 @@
       />
       <el-button type="primary" @click="handleSend" :loading="isLoading">发送</el-button>
     </div>
+
+    <div class="config">
+      <el-input v-model="apiEndpoint" placeholder="API地址" />
+      <el-input v-model="apiKey" type="password" placeholder="API密钥" show-password />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useAIStore } from '@/stores/ai'
 import { User, Robot } from '@element-plus/icons-vue'
-import { getCurrentInstance } from 'vue'
 
 const aiStore = useAIStore()
 const inputMessage = ref('')
 
-// 获取全局配置
-const { $config } = getCurrentInstance().appContext.config.globalProperties
-const apiClient = $config.apiClient
+const { conversation, isLoading, apiKey, apiEndpoint } = aiStore
 
-const { conversation, isLoading } = aiStore
+// 自动保存配置到localStorage
+watch([apiKey, apiEndpoint], ([newKey, newEndpoint]) => {
+  localStorage.setItem('apiKey', newKey)
+  localStorage.setItem('apiEndpoint', newEndpoint)
+})
 
 const handleSend = async () => {
   if (!inputMessage.value.trim()) return
@@ -98,6 +104,13 @@ const handleSend = async () => {
 
 .input-area {
   display: flex;
+  gap: 10px;
+}
+
+.config {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 </style>

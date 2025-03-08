@@ -13,12 +13,11 @@
     <el-main>
       <el-card class="camera-card" shadow="hover">
         <div class="camera-section">
-          <!-- 视频元素 -->
-          <div class="camera-container">
-            <video ref="video" autoplay playsinline class="camera-video"></video>
+          <div class="camera-wrapper">
+            <video ref="video" autoplay playsinline muted class="camera-video"></video>
+            <canvas ref="overlay" class="overlay-canvas"></canvas>
+            <canvas ref="canvas" class="hidden-canvas"></canvas>
           </div>
-          <!-- 画布元素，用于显示摄像头 -->
-          <canvas ref="canvas" class="camera-canvas"></canvas>
           
           <!-- 地图容器 -->
           <div class="map-container">
@@ -99,9 +98,14 @@ const AMAP_SECRET = '7dbd1d0587367322e8856f37dc33299d'
 
 const video = ref(null)
 const canvas = ref(null)
+const overlay = ref(null)
 const mapContainer = ref(null)
 const mediaStream = ref(null)
 const isFrontCamera = ref(false)
+const detectionActive = ref(true)
+
+let detectionInterval = null
+let animationFrameId = null
 
 const recognitionResult = ref('')
 const locationStatus = ref('正在获取位置...')
@@ -348,7 +352,80 @@ const getLocation = async () => {
   }
 }
 
-// 开始人脸识别
+// 调整画布尺寸
+const adjustCanvasSize = () => {
+  const videoEl = video.value
+  const overlayEl = overlay.value
+  const canvasEl = canvas.value
+
+  if (!videoEl || !overlayEl || !canvasEl) return
+
+  const videoWidth = videoEl.videoWidth
+  const videoHeight = videoEl.videoHeight
+
+  overlayEl.width = videoWidth
+  overlayEl.height = videoHeight
+  canvasEl.width = videoWidth
+  canvasEl.height = videoHeight
+
+  overlayEl.style.width = `${videoEl.clientWidth}px`
+  overlayEl.style.height = `${videoEl.clientHeight}px`
+}
+
+// 启动检测循环
+const startDetectionLoop = () => {
+  stopDetectionLoop()
+  detectionActive.value = true
+  const detect = async () => {
+    if (!detectionActive.value) return
+    await detectFaces()
+    animationFrameId = requestAnimationFrame(detect)
+  }
+  detect()
+}
+
+// 停止检测循环
+const stopDetectionLoop = () => {
+  detectionActive.value = false
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+}
+
+// 人脸检测处理
+const detectFaces = async () => {
+  try {
+    const detections = await faceapi.detectAllFaces(
+      video.value,
+      new faceapi.TinyFaceDetectorOptions()
+    )
+    drawDetectionBox(detections)
+  } catch (error) {
+    console.error('人脸检测错误:', error)
+  }
+}
+
+// 绘制检测框
+const drawDetectionBox = (detections) => {
+  const ctx = overlay.value.getContext('2d')
+  ctx.clearRect(0, 0, overlay.value.width, overlay.value.height)
+
+  detections.forEach(detection => {
+    const box = detection.box
+    const score = detection.score.toFixed(2)
+    
+    ctx.beginPath()
+    ctx.lineWidth = 4
+    ctx.strokeStyle = '#409EFF'
+    ctx.rect(box.x, box.y, box.width, box.height)
+    ctx.stroke()
+
+    ctx.fillStyle = '#409EFF'
+    ctx.font = 'bold 18px Arial'
+    ctx.fillText(`${score * 100}%`, box.x + 5, box.y - 10)
+  })
+}
+
 // 切换摄像头
 const switchCamera = async () => {
   try {
@@ -359,15 +436,88 @@ const switchCamera = async () => {
     isFrontCamera.value = !isFrontCamera.value
     const constraints = {
       video: {
-        facingMode: isFrontCamera.value ? 'user' : 'environment'
+        facingMode: isFrontCamera.value ? 'user' : 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 }
       }
     }
     
     mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
     video.value.srcObject = mediaStream.value
+    adjustCanvasSize()
+    startDetectionLoop()
   } catch (error) {
     console.error('切换摄像头失败:', error)
     cameraError.value = '切换摄像头失败'
+  }
+}
+
+// 初始化摄像头
+const initCamera = async () => {
+  try {
+    await switchCamera()
+    await loadFaceApiModels()
+    window.addEventListener('resize', adjustCanvasSize)
+  } catch (error) {
+    cameraError.value = '摄像头初始化失败'
+  }
+}
+
+// 加载人脸识别模型
+const loadFaceApiModels = async () => {
+  try {
+    await faceapi.loadTinyFaceDetectorModel('/models')
+    await faceapi.loadFaceLandmarkTinyModel('/models')
+  } catch (error) {
+    handleError('模型加载失败', error)
+  }
+}
+
+// 生命周期钩子
+onMounted(async () => {
+  await initCamera()
+  await initAMap()
+})
+
+// 手动释放摄像头资源
+const releaseCamera = () => {
+  stopDetectionLoop()
+  if (mediaStream.value) {
+    mediaStream.value.getTracks().forEach(track => {
+      track.stop()
+      track.enabled = false
+    })
+    mediaStream.value = null
+  }
+}
+
+onBeforeUnmount(() => {
+  releaseCamera()
+  window.removeEventListener('resize', adjustCanvasSize)
+  if (map.value) {
+    map.value.destroy()
+  }
+  if (marker.value) {
+    marker.value.setMap(null)
+  }
+})
+
+// 添加页面可见性监听
+onMounted(() => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
+
+// 处理页面可见性变化
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    releaseCamera()
+  } else {
+    initCamera()
   }
 }
 

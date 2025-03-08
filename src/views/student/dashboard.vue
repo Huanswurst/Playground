@@ -112,7 +112,7 @@ import { Expand, Fold } from '@element-plus/icons-vue'
 import { Calendar, Notebook, User } from '@element-plus/icons-vue'
 
 const router = useRouter()
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(true)
 
 const handleLogout = () => {
   router.push('/login')

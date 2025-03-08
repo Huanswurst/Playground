@@ -153,7 +153,7 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(true)
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
 }

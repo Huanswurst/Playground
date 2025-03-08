@@ -8,7 +8,6 @@ import StudentDashboard from '../views/student/dashboard.vue';
 import StudentAttendance from '../views/student/StudentAttendance.vue';
 import FaceRecognitionAttendance from '../views/student/FaceRecognitionAttendance.vue';
 import GeoFaceRecognitionAttendance from '../views/student/GeoFaceRecognitionAttendance.vue';
-import GeoFaceRecognitionAttendanceTest from '../views/student/GeoFaceRecognitionAttendanceTest.vue';
 import PhotoRecognition from '../views/student/PhotoRecognition.vue';
 import StudentSelfieCapture from '../views/student/StudentSelfieCapture.vue';
 import SpecialCaseEnrollment from '../views/student/SpecialCaseEnrollment.vue';
@@ -35,7 +34,6 @@ import UserManagement from '../views/admin/UserManagement.vue';
 import ObjectRecognition from '../views/tmpView/objectRecogntion.vue';
 
 const routes = [
-  { path: '/student/geo-attendance-test', component: GeoFaceRecognitionAttendanceTest },
   { path: '/', redirect: '/login' },
   { path: '/login', component: Login },
   { path: '/register', component: Register },
@@ -78,45 +76,9 @@ const routes = [
   { path: '/object-recognition', component: ObjectRecognition },
 ];
 
-// 路由守卫
-const authGuard = (to, from, next) => {
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
-  
-  // 公共路由
-  const publicRoutes = ['/login', '/register'];
-  if (publicRoutes.includes(to.path)) {
-    return next();
-  }
-
-  // 检查是否登录
-  if (!token) {
-    return next('/login');
-  }
-
-  // 检查角色权限
-  const roleRoutes = {
-    student: ['/student'],
-    teacher: ['/teacher'],
-    admin: ['/admin']
-  };
-
-  const hasPermission = Object.entries(roleRoutes).some(([role, prefixes]) => {
-    return userRole === role && prefixes.some(prefix => to.path.startsWith(prefix));
-  });
-
-  if (!hasPermission) {
-    return next('/login');
-  }
-
-  next();
-};
-
 const router = createRouter({
     history: createWebHistory(),
     routes,
 });
-
-router.beforeEach(authGuard);
 
 export default router;

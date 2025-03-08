@@ -145,7 +145,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(true)
 
 const handleLogout = () => {
   router.push('/login')
