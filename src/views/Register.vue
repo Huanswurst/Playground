@@ -15,6 +15,7 @@
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input
+          
             v-model="registerForm.password"
             type="password"
             placeholder="请输入密码"
@@ -39,7 +40,7 @@
 </template>
 
 <script>
-import config from '@/config';
+import { apiBaseUrl } from '@/config';
 
 export default {
   data() {
@@ -82,7 +83,7 @@ export default {
       this.$refs.registerFormRef.validate(async (valid) => {
         if (valid) {
           try {
-            const response = await fetch(`${config.API_BASE_URL}auth/register/`, {
+            const response = await fetch(`${apiBaseUrl}/api/register/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -95,11 +96,22 @@ export default {
             });
 
             if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.detail || '注册失败');
+              let errorMessage = '注册失败';
+              try {
+                const errorData = await response.clone().json();
+                errorMessage = errorData.detail || errorMessage;
+              } catch (e) {
+                errorMessage = await response.clone().text() || errorMessage;
+              }
+              throw new Error(errorMessage);
             }
 
-            const data = await response.json();
+            let data = {};
+            try {
+              data = await response.json();
+            } catch (e) {
+              throw new Error('无法解析服务器响应');
+            }
             this.$message.success('注册成功！');
             
             if (this.registerForm.role === 'student') {

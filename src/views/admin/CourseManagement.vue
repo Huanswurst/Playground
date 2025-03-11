@@ -84,7 +84,7 @@
               <component :is="isSidebarCollapsed ? Expand : Fold" />
             </el-icon>
           </el-button>
-          <h1 class="header-title">课程管理系统</h1>
+          <h1 class="header-title">课程管理界面</h1>
           <el-button
             type="danger"
             class="logout-button"
@@ -101,6 +101,19 @@
           <el-form :inline="true">
             <el-form-item>
               <el-input v-model="searchQuery" placeholder="搜索课程名称或代码"></el-input>
+            </el-form-item>
+            <el-form-item label="学年">
+              <el-select v-model="academicYearFilter" placeholder="请选择学年">
+                <el-option label="2023" value="2023"></el-option>
+                <el-option label="2024" value="2024"></el-option>
+                <el-option label="2025" value="2025"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="学期">
+              <el-select v-model="semesterFilter" placeholder="请选择学期">
+                <el-option label="春季" value="春季"></el-option>
+                <el-option label="秋季" value="秋季"></el-option>
+              </el-select>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="fetchCourses">查询</el-button>
@@ -148,8 +161,8 @@
             </el-form-item>
             <el-form-item label="学期">
               <el-select v-model="currentCourse.semester" placeholder="请选择">
-                <el-option label="春季" value="spring"></el-option>
-                <el-option label="秋季" value="fall"></el-option>
+                <el-option label="春季" value="春季"></el-option>
+                <el-option label="秋季" value="秋季"></el-option>
               </el-select>
             </el-form-item>
           </el-form>
@@ -168,6 +181,7 @@ import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { Expand, Fold } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const handleLogout = () => {
@@ -180,6 +194,8 @@ const toggleSidebar = () => {
 }
 
 const searchQuery = ref('')
+const academicYearFilter = ref('')
+const semesterFilter = ref('')
 const courses = ref([])
 const total = ref(0)
 const pageSize = ref(10)
@@ -191,20 +207,56 @@ const currentCourse = ref({
   course_code: '',
   course_name: '',
   academic_year: new Date().getFullYear(),
-  semester: 'spring'
+  semester: '春季'
 })
 
 const fetchCourses = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/admin/courses/', {
-      params: {
-        search: searchQuery.value,
-        page: currentPage.value
+    // 模拟数据
+    let data = [
+      {
+        course_code: 'CS101',
+        course_name: '计算机科学导论',
+        academic_year: 2024,
+        semester: '春季'
+      },
+      {
+        course_code: 'MATH201',
+        course_name: '高等数学',
+        academic_year: 2024,
+        semester: '秋季'
+      },
+      {
+        course_code: 'ENG101',
+        course_name: '大学英语',
+        academic_year: 2024,
+        semester: '春季'
+      },
+      {
+        course_code: 'PHYS101',
+        course_name: '大学物理',
+        academic_year: 2024,
+        semester: '秋季'
+      },
+      {
+        course_code: 'CHEM101',
+        course_name: '大学化学',
+        academic_year: 2024,
+        semester: '春季'
       }
-    })
-    courses.value = response.data.results
-    total.value = response.data.count
+    ]
+
+    // 应用筛选条件
+    if (academicYearFilter.value) {
+      data = data.filter(course => course.academic_year == academicYearFilter.value)
+    }
+    if (semesterFilter.value) {
+      data = data.filter(course => course.semester === semesterFilter.value)
+    }
+
+    courses.value = data
+    total.value = courses.value.length
   } catch (error) {
     console.error('获取课程列表失败:', error)
   } finally {
@@ -217,7 +269,7 @@ const addCourse = () => {
     course_code: '',
     course_name: '',
     academic_year: new Date().getFullYear(),
-    semester: 'spring'
+  semester: '春季'
   }
   dialogTitle.value = '添加课程'
   dialogVisible.value = true
@@ -305,5 +357,9 @@ fetchCourses()
 
 .filter-container {
   margin-bottom: 20px;
+}
+
+.el-select {
+  min-width: 200px;
 }
 </style>

@@ -240,8 +240,14 @@ const drawDetectionBox = (detections) => {
     ctx.stroke()
 
     ctx.fillStyle = '#409EFF'
-    ctx.font = 'bold 18px Arial'
+    ctx.font = 'bold 40px Microsoft YaHei'
     ctx.fillText(`${score * 100}%`, box.x + 5, box.y - 10)
+    
+    // 添加右下角标识
+    ctx.textAlign = 'right'
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'
+    ctx.font = 'bold 20px Microsoft YaHei'
+    ctx.fillText('韩政', overlay.value.width - 20, overlay.value.height - 20)
   })
 }
 
@@ -253,12 +259,31 @@ const startRecognition = async () => {
   recognitionResult.value = '正在验证身份...'
 
   try {
-    // 本地模拟识别结果
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    const success = Math.random() > 0.2
-    recognitionResult.value = success 
-      ? '身份验证成功 ✅' 
-      : '验证失败：未匹配到学生信息'
+    // 获取实时人脸特征
+    const liveDescriptor = await getFaceDescriptor()
+    
+    // 调用后端匹配接口
+    const response = await fetch('/api/face/match', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ descriptor: Array.from(liveDescriptor) })
+    })
+
+    if (!response.ok) throw new Error('匹配请求失败')
+    
+    const result = await response.json()
+    const success = result.match && result.confidence > 0.85
+    recognitionResult.value = success
+      ? `身份验证成功 ✅ (相似度: ${(result.confidence * 100).toFixed(1)}%)`
+      : `验证失败：${result.message || '未匹配到学生信息'}`
+    if (success) {
+      setTimeout(() => {
+        router.push('/student/attendance/success')
+      }, 1500)
+    }
     resultType.value = success ? 'success' : 'error'
   } catch (error) {
     recognitionResult.value = '识别过程发生错误'

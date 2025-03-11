@@ -40,7 +40,8 @@ class User(AbstractUser):
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     student_number = models.CharField(max_length=20, unique=True)
-    face_embedding = models.TextField(blank=True)
+    face_embedding = models.BinaryField(null=True, blank=True)  # 使用BinaryField存储二进制特征数据
+    face_updated_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.display_name} ({self.student_number})"
@@ -71,7 +72,7 @@ class Course(models.Model):
         'Student', 
         related_name='courses',
         through='CourseParticipant',
-        through_fields=('course', 'user'),
+        through_fields=('course', 'student'),
         blank=True
     )
 
@@ -113,7 +114,7 @@ class AttendanceRecord(models.Model):
         return f"{self.student} - {self.event} - {self.status}"
 
 class CourseParticipant(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, blank=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     role = models.CharField(max_length=10, choices=[
         ('student', 'Student'),
@@ -122,10 +123,36 @@ class CourseParticipant(models.Model):
     enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'course', 'role')
+        unique_together = ('student', 'course', 'role')
         indexes = [
             models.Index(fields=['course', 'role'])
         ]
 
     def __str__(self):
-        return f"{self.user} - {self.course} ({self.role})"
+        return f"{self.student} - {self.course} ({self.role})"
+
+class SystemLog(models.Model):
+    LOG_LEVEL_CHOICES = [
+        ('DEBUG', 'Debug'),
+        ('INFO', 'Info'),
+        ('WARNING', 'Warning'),
+        ('ERROR', 'Error'),
+        ('CRITICAL', 'Critical')
+    ]
+
+    level = models.CharField(max_length=10, choices=LOG_LEVEL_CHOICES)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    related_object_type = models.CharField(max_length=50, null=True, blank=True)
+    related_object_id = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['level']),
+            models.Index(fields=['related_object_type', 'related_object_id'])
+        ]
+
+    def __str__(self):
+        return f"[{self.level}] {self.message[:50]}"

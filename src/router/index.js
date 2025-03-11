@@ -43,6 +43,11 @@ const routes = [
   { path: '/student/dashboard', component: StudentDashboard },
   { path: '/student/attendance', component: StudentAttendance },
   { path: '/student/face-recognition', component: FaceRecognitionAttendance },
+  { 
+    path: '/student/attendance/success',
+    name: 'AttendanceSuccess',
+    component: () => import('../views/student/AttendanceSuccess.vue')
+  },
   { path: '/student/geo-attendance', component: GeoFaceRecognitionAttendance },
   { path: '/student/photo-recognition', component: PhotoRecognition },
   { path: '/student/selfie-capture', component: StudentSelfieCapture },

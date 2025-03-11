@@ -90,11 +90,11 @@ WSGI_APPLICATION = "backend.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "my_attendance_system",
+        "NAME": "postgres",
         "USER": "postgres",
         "PASSWORD": "Chen978288",
-        "HOST": "8.153.106.1",
-        "PORT": "5437",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
     }
 }
 

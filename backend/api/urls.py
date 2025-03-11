@@ -20,10 +20,32 @@ router.register('student/courses', views.StudentCourseViewSet, basename='student
 router.register('student/attendance-events', views.StudentAttendanceEventViewSet, basename='student-attendance-events')
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('api/', include(router.urls)),
     path('register/', views.register, name='register'),
-    path('login/', views.login_view, name='login'),
+    path('login/', views.login, name='login'),
     path('current_user/', views.current_user, name='current_user'),
-    path('logout/', views.logout_view, name='logout'),
+    path('logout/', views.logout, name='logout'),
     path('test/', views.test_api, name='test_api'),
+    path('face/match/', views.FaceMatchAPI.as_view(), name='face-match'),
+    path('face/register/', views.FaceRegistrationAPI.as_view(), name='face-register'),
+    
+    # 学生相关API
+    path('student/dashboard/', views.StudentDashboardAPI.as_view(), name='student-dashboard'),
+    path('student/geo-attendance/', views.GeoFaceRecognitionAttendanceAPI.as_view(), name='geo-attendance'),
+    path('student/photo-recognition/', views.PhotoRecognitionAPI.as_view(), name='photo-recognition'),
+    path('student/selfie-capture/', views.StudentSelfieCaptureAPI.as_view(), name='selfie-capture'),
+    
+    # 教师相关API
+    path('teacher/dashboard/', views.TeacherDashboardAPI.as_view(), name='teacher-dashboard'),
+    path('teacher/group-photo/', views.GroupPhotoCaptureAPI.as_view(), name='group-photo'),
+    
+    # 管理员相关API
+    path('admin/attendance/', views.AttendanceManagementAPI.as_view(), name='attendance-management'),
+    path('admin/statistics/', views.DataStatisticsAPI.as_view(), name='data-statistics'),
+    path('admin/logs/', views.LogManagementAPI.as_view(), name='log-management'),
+    path('admin/permissions/', views.PermissionManagementAPI.as_view(), name='permission-management'),
+    path('admin/settings/', views.SystemSettingsAPI.as_view(), name='system-settings'),
+    
+    # 对象识别API
+    path('object-recognition/', views.ObjectRecognitionAPI.as_view(), name='object-recognition'),
 ]
