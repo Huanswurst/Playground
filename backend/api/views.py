@@ -1,9 +1,10 @@
+from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
@@ -434,10 +435,24 @@ class ClassViewSet(viewsets.ModelViewSet):
 class RegisterAPI(APIView):
     permission_classes = [permissions.AllowAny]
     
+    @transaction.atomic
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # 记录详细验证错误
+            errors = serializer.errors
+            SystemLog.objects.create(
+                level='WARNING',
+                message=f'注册验证失败: {errors}',
+                user=None,
+                related_object_type='User',
+                related_object_id=None
+            )
+            print(f"注册验证错误详情: {errors}")  # 添加控制台日志输出
+            return Response({
+                'error': '验证失败',
+                'details': errors
+            }, status=status.HTTP_400_BAD_REQUEST)
             
         try:
             # 创建用户并分配角色
@@ -446,10 +461,17 @@ class RegisterAPI(APIView):
             # 根据角色创建关联模型
             role = serializer.validated_data.get('role', 'student')
             if role == 'student':
-                Student.objects.create(user=user)
+                try:
+                    student_number = Student.get_next_student_number()
+                    Student.objects.create(user=user, student_number=student_number)
+                    print(f"成功创建学生用户，学号：{student_number}")  # 添加调试日志
+                except Exception as e:
+                    print(f"创建学生记录失败：{str(e)}")
+                    raise ValueError("无法生成学生学号") from e
             elif role == 'teacher':
-                Staff.objects.create(user=user)
+                Staff.objects.get_or_create(user=user)
             elif role == 'admin':
+                Staff.objects.get_or_create(user=user)
                 user.is_staff = True
                 user.is_superuser = True
                 user.save()
@@ -466,8 +488,16 @@ class RegisterAPI(APIView):
 
         except Exception as e:
             print(f"注册失败: {str(e)}")
+            # 添加详细错误日志
+            SystemLog.objects.create(
+                level='ERROR',
+                message=f'用户注册失败: {str(e)}',
+                user=None,
+                related_object_type='User',
+                related_object_id=user.id if 'user' in locals() else None
+            )
             return Response(
-                {'error': '用户注册失败，请检查输入数据'},
+                {'error': f'用户注册失败: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

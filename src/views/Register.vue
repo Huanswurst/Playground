@@ -4,10 +4,10 @@
       <h2>注册</h2>
       <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="100px">
         <el-form-item label="角色" prop="role">
-          <el-radio-group v-model="registerForm.role">
-          <el-radio value="teacher">教师</el-radio>
-          <el-radio value="student">学生</el-radio>
-          <el-radio value="admin">管理员</el-radio>
+          <el-radio-group v-model="registerForm.role" class="role-radio-group">
+            <el-radio label="student" border>学生</el-radio>
+            <el-radio label="teacher" border>教师</el-radio>
+            <el-radio label="admin" border>管理员</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="用户名" prop="username">
@@ -57,7 +57,7 @@ export default {
 
     return {
       registerForm: {
-        role: 'teacher', // 默认角色为教师
+        role: '', // 移除默认角色
         username: '',
         email: '',
         password: '',

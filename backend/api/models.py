@@ -3,17 +3,14 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class User(AbstractUser):
-    username = models.CharField(max_length=50, unique=True)
-    password_hash = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
-    display_name = models.CharField(max_length=50, blank=True)
-    last_login = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
     role = models.CharField(max_length=20, choices=[
-        ('student', 'Student'),
-        ('teacher', 'Teacher'),
-        ('admin', 'Admin')
-    ])
+        ('student', '学生'),
+        ('teacher', '教师'),
+        ('admin', '管理员')
+    ], default='student')
+    
+    class Meta:
+        swappable = 'AUTH_USER_MODEL'
     
     # Add custom related_names to avoid conflicts
     groups = models.ManyToManyField(
@@ -40,11 +37,51 @@ class User(AbstractUser):
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     student_number = models.CharField(max_length=20, unique=True)
-    face_embedding = models.BinaryField(null=True, blank=True)  # 使用BinaryField存储二进制特征数据
+    face_embedding = models.BinaryField(null=True, blank=True)
     face_updated_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.display_name} ({self.student_number})"
+
+    @classmethod
+    def get_next_student_number(cls):
+        from django.db import transaction
+        import datetime
+        
+        current_year = datetime.datetime.now().year
+        with transaction.atomic():
+            # 使用select_for_update锁定记录防止并发冲突
+            last_student = cls.objects.select_for_update().filter(
+                student_number__startswith=str(current_year)
+            ).order_by('-student_number').first()
+            
+            if last_student:
+                last_seq = int(last_student.student_number[-4:])
+                new_seq = last_seq + 1
+            else:
+                new_seq = 1
+                
+            return f"{current_year}{new_seq:04d}"
+
+    @classmethod
+    def get_next_student_number(cls):
+        from django.db import transaction
+        import datetime
+        
+        current_year = datetime.datetime.now().year
+        with transaction.atomic():
+            # 使用select_for_update锁定记录
+            last_student = cls.objects.select_for_update().filter(
+                student_number__startswith=str(current_year)
+            ).order_by('-student_number').first()
+            
+            if last_student:
+                last_seq = int(last_student.student_number[-4:])
+                new_seq = last_seq + 1
+            else:
+                new_seq = 1
+                
+            return f"{current_year}{new_seq:04d}"
 
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from .models import (
-    User,
     Student,
     Staff,
     Course,
@@ -12,6 +12,8 @@ from .models import (
     ClassStudent,
     ClassTeacher
 )
+
+User = get_user_model()
 import numpy as np
 
 class FaceMatchSerializer(serializers.Serializer):
@@ -27,29 +29,58 @@ class FaceMatchSerializer(serializers.Serializer):
         return np.array(value, dtype=np.float32)
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        help_text="有效的电子邮件地址"
+    )
     password = serializers.CharField(
         write_only=True,
         required=True,
-        style={'input_type': 'password'}
+        min_length=8,
+        style={'input_type': 'password'},
+        help_text="至少8个字符，包含字母和数字"
     )
     
     class Meta:
         model = User
-        fields = ['username', 'password', 'email', 'display_name', 'role']
+        fields = ['username', 'email', 'password', 'role']
         extra_kwargs = {
-            'email': {'required': True},
-            'display_name': {'required': True}
+            'username': {
+                'min_length': 4,
+                'help_text': "4-20个字符，只能包含字母、数字和下划线"
+            }
         }
 
+    def validate(self, data):
+        # 新增角色字段验证
+        if 'role' not in data:
+            raise serializers.ValidationError({"role": "必须选择用户角色"})
+        if data['role'] not in ['student', 'teacher', 'admin']:
+            raise serializers.ValidationError({"role": "无效的用户角色"})
+        if User.objects.filter(username=data['username']).exists():
+            raise serializers.ValidationError({"username": "该用户名已被使用"})
+        if User.objects.filter(email=data['email']).exists():
+            raise serializers.ValidationError({"email": "该邮箱已被注册"})
+        return data
+
     def create(self, validated_data):
-        user = User.objects.create_user(
+        # Remove confirm_password before creating user
+        validated_data.pop('confirm_password', None)
+        
+        # 手动处理密码哈希
+        user = User(
             username=validated_data['username'],
             email=validated_data['email'],
-            display_name=validated_data['display_name'],
-            role=validated_data.get('role', 'student'),
-            password=validated_data['password']
+            role=validated_data['role']
         )
+        user.set_password(validated_data['password'])
+        user.save()
         return user
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'display_name', 'role']
 
 class StudentSerializer(serializers.ModelSerializer):
     user = UserSerializer()
