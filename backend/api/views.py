@@ -415,6 +415,107 @@ class StudentManagementViewSet(viewsets.ModelViewSet):
         student.user.save()
         return Response({'status': 'deactivated'})
 
+class ClassViewSet(viewsets.ModelViewSet):
+    queryset = Class.objects.all()
+    serializer_class = ClassSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        grade = self.request.query_params.get('grade', None)
+        major = self.request.query_params.get('major', None)
+        
+        if grade:
+            queryset = queryset.filter(grade=grade)
+        if major:
+            queryset = queryset.filter(major=major)
+        return queryset
+
+class RegisterAPI(APIView):
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            # 创建用户并分配角色
+            user = serializer.save()
+            
+            # 根据角色创建关联模型
+            role = serializer.validated_data.get('role', 'student')
+            if role == 'student':
+                Student.objects.create(user=user)
+            elif role == 'teacher':
+                Staff.objects.create(user=user)
+            elif role == 'admin':
+                user.is_staff = True
+                user.is_superuser = True
+                user.save()
+
+            # 生成认证token
+            token, created = Token.objects.get_or_create(user=user)
+            
+            return Response({
+                'token': token.key,
+                'user_id': user.pk,
+                'username': user.username,
+                'role': role
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            print(f"注册失败: {str(e)}")
+            return Response(
+                {'error': '用户注册失败，请检查输入数据'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class ClassStudentViewSet(viewsets.ModelViewSet):
+    queryset = ClassStudent.objects.all()
+    serializer_class = ClassStudentSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        class_id = self.request.query_params.get('class_id', None)
+        
+        if class_id:
+            queryset = queryset.filter(class_instance=class_id)
+        return queryset
+
+class ClassTeacherViewSet(viewsets.ModelViewSet):
+    queryset = ClassTeacher.objects.all()
+    serializer_class = ClassTeacherSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        class_id = self.request.query_params.get('class_id', None)
+        
+        if class_id:
+            queryset = queryset.filter(class_instance=class_id)
+        return queryset
+
+class StudentManagementViewSet(viewsets.ModelViewSet):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = [IsAdminUser]
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        student = self.get_object()
+        student.user.is_active = True
+        student.user.save()
+        return Response({'status': 'activated'})
+
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        student = self.get_object()
+        student.user.is_active = False
+        student.user.save()
+        return Response({'status': 'deactivated'})
+
 class AttendanceEventManagementViewSet(viewsets.ModelViewSet):
     queryset = AttendanceEvent.objects.all()
     serializer_class = AttendanceEventSerializer
@@ -461,37 +562,6 @@ class StudentAttendanceEventViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return self.queryset.filter(course__students__user=self.request.user)
-
-@api_view(['POST'])
-def register(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    role = request.data.get('role')
-    
-    if not all([username, password, role]):
-        return Response({'error': '缺少必要参数'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    if User.objects.filter(username=username).exists():
-        return Response({'error': '用户名已存在'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    user = User.objects.create_user(username=username, password=password)
-    
-    # 根据角色创建对应的用户类型
-    if role == 'student':
-        Student.objects.create(user=user)
-    elif role == 'teacher':
-        Staff.objects.create(user=user)
-    elif role == 'admin':
-        user.is_staff = True
-        user.is_superuser = True
-        user.save()
-    token, created = Token.objects.get_or_create(user=user)
-    
-    return Response({
-        'token': token.key,
-        'user_id': user.pk,
-        'username': user.username
-    })
 
 @api_view(['POST'])
 def login(request):
@@ -568,4 +638,3 @@ class FaceRegistrationAPI(APIView):
             return Response({'error': '学生信息不存在'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-

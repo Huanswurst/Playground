@@ -27,8 +27,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-
+15528666
 # Application definition
+
+AUTH_USER_MODEL = 'api.User'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # 添加默认自动字段配置
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -38,7 +41,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "rest_framework.authtoken",
     "corsheaders",
     "api",
 ]
@@ -57,7 +59,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -89,12 +91,12 @@ WSGI_APPLICATION = "backend.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "postgres",
-        "USER": "postgres",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "attandence_sys_v2",
+        "USER": "attandence_user",
         "PASSWORD": "Chen978288",
-        "HOST": "127.0.0.1",
-        "PORT": "5432",
+        "HOST": "localhost",
+        "PORT": "3306",
     }
 }
 

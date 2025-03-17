@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import config from '../config';
+import { apiBaseUrl } from '../config';
 
 export default {
   data() {
@@ -104,7 +104,7 @@ export default {
         }
         try {
           this.isLoggingIn = true;
-          const response = await fetch(`${config.API_BASE_URL}auth/login/`, {
+          const response = await fetch(`${apiBaseUrl}auth/login/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

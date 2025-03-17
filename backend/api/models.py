@@ -131,6 +131,45 @@ class CourseParticipant(models.Model):
     def __str__(self):
         return f"{self.student} - {self.course} ({self.role})"
 
+class Class(models.Model):
+    class_id = models.AutoField(primary_key=True)
+    class_name = models.CharField(max_length=100)
+    grade = models.CharField(max_length=20)
+    major = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.class_name} ({self.grade} {self.major})"
+
+class ClassStudent(models.Model):
+    class_instance = models.ForeignKey(Class, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('class_instance', 'student')
+        indexes = [
+            models.Index(fields=['class_instance', 'student'])
+        ]
+
+    def __str__(self):
+        return f"{self.student} in {self.class_instance}"
+
+class ClassTeacher(models.Model):
+    class_instance = models.ForeignKey(Class, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(Staff, on_delete=models.CASCADE)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('class_instance', 'teacher')
+        indexes = [
+            models.Index(fields=['class_instance', 'teacher'])
+        ]
+
+    def __str__(self):
+        return f"{self.teacher} teaches {self.class_instance}"
+
 class SystemLog(models.Model):
     LOG_LEVEL_CHOICES = [
         ('DEBUG', 'Debug'),

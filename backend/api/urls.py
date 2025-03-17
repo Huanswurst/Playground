@@ -19,9 +19,14 @@ router.register('teacher/attendance-events', views.TeacherAttendanceEventViewSet
 router.register('student/courses', views.StudentCourseViewSet, basename='student-courses')
 router.register('student/attendance-events', views.StudentAttendanceEventViewSet, basename='student-attendance-events')
 
+# 班级管理路由
+router.register('admin/classes', views.ClassViewSet, basename='admin-classes')
+router.register('admin/class-students', views.ClassStudentViewSet, basename='admin-class-students')
+router.register('admin/class-teachers', views.ClassTeacherViewSet, basename='admin-class-teachers')
+
 urlpatterns = [
-    path('api/', include(router.urls)),
-    path('register/', views.register, name='register'),
+    path('', include(router.urls)),
+    path('register/', views.RegisterAPI.as_view(), name='register'),
     path('login/', views.login, name='login'),
     path('current_user/', views.current_user, name='current_user'),
     path('logout/', views.logout, name='logout'),

@@ -109,7 +109,7 @@
 import { Menu as IconMenu, Setting, Expand, Fold, Document, Warning } from '@element-plus/icons-vue'
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import config from '@/config'
+import { apiBaseUrl, apiEndpoints } from '@/config'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -146,7 +146,7 @@ const fetchAttendance = async () => {
       page_size: pageSize.value
     })
     
-    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.admin.attendance}?${params.toString()}`, {
+    const response = await fetch(`${apiBaseUrl}${apiEndpoints.admin.attendance}?${params.toString()}`, {
       headers: {
         'Authorization': `Token ${token}`,
         'Content-Type': 'application/json'
@@ -176,7 +176,7 @@ const handleSearch = () => {
 const handleEdit = async (record) => {
   try {
     const token = localStorage.getItem('token')
-    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.admin.attendance}${record.id}/`, {
+    const response = await fetch(`${apiBaseUrl}${apiEndpoints.admin.attendance}${record.id}/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Token ${token}`,
@@ -199,7 +199,7 @@ const handleEdit = async (record) => {
 const handleDelete = async (record) => {
   try {
     const token = localStorage.getItem('token')
-    const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.admin.attendance}${record.id}/`, {
+    const response = await fetch(`${apiBaseUrl}${apiEndpoints.admin.attendance}${record.id}/`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Token ${token}`

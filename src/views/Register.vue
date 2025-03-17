@@ -13,9 +13,11 @@
         <el-form-item label="用户名" prop="username">
           <el-input v-model="registerForm.username" placeholder="请输入用户名" />
         </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input
-          
             v-model="registerForm.password"
             type="password"
             placeholder="请输入密码"
@@ -57,6 +59,7 @@ export default {
       registerForm: {
         role: 'teacher', // 默认角色为教师
         username: '',
+        email: '',
         password: '',
         confirmPassword: '',
       },
@@ -65,6 +68,10 @@ export default {
         username: [
           { required: true, message: '用户名不能为空', trigger: 'blur' },
           { min: 3, max: 16, message: '用户名长度应为 3 到 16 个字符', trigger: 'blur' },
+        ],
+        email: [
+          { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+          { type: 'email', message: '请输入有效的邮箱地址', trigger: ['blur', 'change'] }
         ],
         password: [
           { required: true, message: '密码不能为空', trigger: 'blur' },
@@ -90,6 +97,7 @@ export default {
               },
               body: JSON.stringify({
                 username: this.registerForm.username,
+                email: this.registerForm.email,
                 password: this.registerForm.password,
                 role: this.registerForm.role
               })
