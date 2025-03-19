@@ -3,9 +3,11 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
+# 公共路由
+router.register('courses', views.CourseManagementViewSet, basename='courses')
+
 # Admin routes
 router.register('admin/staff', views.StaffManagementViewSet, basename='admin-staff')
-router.register('admin/courses', views.CourseManagementViewSet, basename='admin-courses')
 router.register('admin/students', views.StudentManagementViewSet, basename='admin-students')
 router.register('admin/attendance-events', views.AttendanceEventManagementViewSet, basename='admin-attendance-events')
 router.register('admin/attendance-records', views.AttendanceRecordManagementViewSet, basename='admin-attendance-records')

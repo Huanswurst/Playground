@@ -381,7 +381,7 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 class CourseManagementViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [permissions.AllowAny]
 
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
