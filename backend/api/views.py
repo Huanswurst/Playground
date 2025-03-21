@@ -3,7 +3,6 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,7 +11,6 @@ from .models import Student
 from .serializers import FaceMatchSerializer
 import numpy as np
 from rest_framework import status, viewsets
-from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth import authenticate, login, logout
 from django.db.models import Count, Sum, Avg
@@ -476,11 +474,7 @@ class RegisterAPI(APIView):
                 user.is_superuser = True
                 user.save()
 
-            # 生成认证token
-            token, created = Token.objects.get_or_create(user=user)
-            
             return Response({
-                'token': token.key,
                 'user_id': user.pk,
                 'username': user.username,
                 'role': role
@@ -605,9 +599,7 @@ def login(request):
     
     if user is not None:
         auth_login(request, user)
-        token, created = Token.objects.get_or_create(user=user)
         return Response({
-            'token': token.key,
             'user_id': user.pk,
             'username': user.username
         })
