@@ -122,10 +122,13 @@ export default {
             }
             this.$message.success('注册成功！');
             
-            if (this.registerForm.role === 'student') {
-              this.$router.push('/face-recognition');
-            } else {
-              this.$router.push('/login');
+            // 根据角色跳转到对应仪表盘
+            if (this.registerForm.role === 'admin') {
+              this.$router.push('/admin/dashboard');
+            } else if (this.registerForm.role === 'student') {
+              this.$router.push('/student/dashboard');
+            } else if (this.registerForm.role === 'teacher') {
+              this.$router.push('/teacher/dashboard');
             }
           } catch (error) {
             this.$message.error(error.message);

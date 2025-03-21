@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .views import LoginView
 
 router = DefaultRouter()
 # 公共路由
@@ -29,7 +30,7 @@ router.register('admin/class-teachers', views.ClassTeacherViewSet, basename='adm
 urlpatterns = [
     path('', include(router.urls)),
     path('register/', views.RegisterAPI.as_view(), name='register'),
-    path('login/', views.login, name='login'),
+    path('login/', LoginView.as_view(), name='login'),
     path('current_user/', views.current_user, name='current_user'),
     path('logout/', views.logout, name='logout'),
     path('test/', views.test_api, name='test_api'),

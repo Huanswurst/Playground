@@ -104,7 +104,7 @@ export default {
         }
         try {
           this.isLoggingIn = true;
-          const response = await fetch(`${apiBaseUrl}auth/login/`, {
+          const response = await fetch(`${apiBaseUrl}/api/login/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -152,6 +152,12 @@ export default {
         }
       });
     },
+    created() {
+      this.checkLoginStatus();
+    },
+    goToRegister() {
+      this.$router.push('/register');
+    },
     checkLoginStatus() {
       const token = localStorage.getItem('authToken');
       const expires = localStorage.getItem('authExpires');
@@ -172,13 +178,7 @@ export default {
       this.token = null;
       this.expires = null;
       this.$router.push('/login');
-    },
-    goToRegister() {
-      this.$router.push('/register');
     }
-  },
-  created() {
-    this.checkLoginStatus();
   },
 };
 </script>

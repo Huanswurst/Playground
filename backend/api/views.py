@@ -1,6 +1,37 @@
 from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import status
+from rest_framework.response import Response
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # 添加自定义声明
+        token['username'] = user.username
+        token['role'] = user.role
+
+        return token
+
+class LoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            return Response({
+                'error': 'Invalid credentials',
+                'detail': str(e)
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions
@@ -593,18 +624,31 @@ def login(request):
     password = request.data.get('password')
     
     if not all([username, password]):
-        return Response({'error': '缺少用户名或密码'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': '用户名或密码不能为空'}, status=status.HTTP_400_BAD_REQUEST)
     
     user = authenticate(username=username, password=password)
     
     if user is not None:
-        auth_login(request, user)
+        if not user.is_active:
+            return Response({
+                'error': '账户未激活',
+                'detail': '请联系管理员激活账户'
+            }, status=status.HTTP_403_FORBIDDEN)
+            
+        token, created = Token.objects.get_or_create(user=user)
         return Response({
             'user_id': user.pk,
-            'username': user.username
+            'username': user.username,
+            'email': user.email,
+            'token': token.key,
+            'is_active': user.is_active,
+            'role': user.role  # 假设用户模型有role字段
         })
     else:
-        return Response({'error': '用户名或密码错误'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({
+            'error': '认证失败',
+            'detail': '用户名或密码错误'
+        }, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 def logout(request):
