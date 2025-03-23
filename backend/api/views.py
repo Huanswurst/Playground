@@ -62,10 +62,26 @@ class StudentDashboardAPI(APIView):
         courses = Course.objects.filter(students=student)
         attendance = AttendanceRecord.objects.filter(student=student)
         
+        # 获取最近7天的考勤记录
+        recent_attendance = attendance.order_by('-event__start_time')[:5].values(
+            'event__start_time',
+            'event__course__name',
+            'status'
+        )
+        
         data = {
             'total_courses': courses.count(),
             'total_attendance': attendance.count(),
-            'attendance_rate': round(attendance.filter(status='present').count() / max(attendance.count(), 1) * 100, 2)
+            'attendance_rate': round(attendance.filter(status='present').count() / max(attendance.count(), 1) * 100, 2),
+            'check_in_count': attendance.filter(status='present').count(),
+            'recent_attendance': [
+                {
+                    'date': record['event__start_time'].strftime('%Y-%m-%d'),
+                    'course': record['event__course__name'],
+                    'status': record['status']
+                }
+                for record in recent_attendance
+            ]
         }
         return Response(data)
 

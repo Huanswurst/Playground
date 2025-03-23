@@ -43,7 +43,7 @@ const routes = [
   { path: '/student/dashboard', component: StudentDashboard },
   { path: '/student/attendance', component: StudentAttendance },
   { path: '/student/face-recognition', component: FaceRecognitionAttendance },
-  { 
+  {
     path: '/student/attendance/success',
     name: 'AttendanceSuccess',
     component: () => import('../views/student/AttendanceSuccess.vue')
@@ -52,6 +52,8 @@ const routes = [
   { path: '/student/photo-recognition', component: PhotoRecognition },
   { path: '/student/selfie-capture', component: StudentSelfieCapture },
   { path: '/student/special-case', component: SpecialCaseEnrollment },
+  { path: '/student/profile', component: () => import('../views/student/Profile.vue') },
+  { path: '/student/password', component: () => import('../views/student/ChangePassword.vue') },
   
   // 教师路由
   { path: '/teacher/dashboard', component: TeacherDashboard },

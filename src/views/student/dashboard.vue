@@ -8,6 +8,7 @@
         default-active="1"
         class="el-menu-vertical-demo"
         v-if="!isSidebarCollapsed"
+        router
       >
         <el-sub-menu index="1">
           <template #title>
@@ -106,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Expand, Fold } from '@element-plus/icons-vue'
 import { Calendar, Notebook, User } from '@element-plus/icons-vue'
@@ -121,14 +122,26 @@ const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
 
-const attendanceRate = ref(85)
-const checkInCount = ref(12)
-const recentAttendance = ref([
-  { date: '2023-10-01', course: '数学', status: '正常' },
-  { date: '2023-10-02', course: '英语', status: '迟到' },
-  { date: '2023-10-03', course: '物理', status: '缺勤' },
-  { date: '2023-10-04', course: '化学', status: '正常' },
-])
+const attendanceRate = ref(0)
+const checkInCount = ref(0)
+const recentAttendance = ref([])
+
+// 获取仪表盘数据
+const fetchDashboardData = async () => {
+  try {
+    const response = await axios.get('/api/student/dashboard/')
+    attendanceRate.value = response.data.attendance_rate
+    checkInCount.value = response.data.check_in_count
+    recentAttendance.value = response.data.recent_attendance
+  } catch (error) {
+    console.error('获取仪表盘数据失败:', error)
+  }
+}
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchDashboardData()
+})
 
 const attendanceRateColor = computed(() => {
   if (attendanceRate.value >= 90) return '#67c23a' // 绿色
