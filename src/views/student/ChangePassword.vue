@@ -1,72 +1,6 @@
 <template>
-  <el-container>
-    <el-aside
-      :class="{ 'attendance-sidebar': true, collapsed: isSidebarCollapsed }"
-      :style="{ width: isSidebarCollapsed ? '0' : '200px' }"
-    >
-      <el-menu
-        default-active="1"
-        class="el-menu-vertical-demo"
-        v-if="!isSidebarCollapsed"
-        router
-      >
-        <el-sub-menu index="1">
-          <template #title>
-            <el-icon><calendar /></el-icon>
-            <span>考勤管理</span>
-          </template>
-          <el-menu-item index="/student/attendance">考勤记录</el-menu-item>
-          <el-menu-item index="/student/attendance/statistics">考勤统计</el-menu-item>
-          <el-menu-item index="/student/attendance/apply">考勤申诉</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="2">
-          <template #title>
-            <el-icon><notebook /></el-icon>
-            <span>课程信息</span>
-          </template>
-          <el-menu-item index="/student/course/schedule">课程表</el-menu-item>
-          <el-menu-item index="/student/course/materials">课程资料</el-menu-item>
-          <el-menu-item index="/student/course/assignments">作业提交</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="4">
-          <template #title>
-            <el-icon><user /></el-icon>
-            <span>个人中心</span>
-          </template>
-          <el-menu-item index="/student/profile">个人信息</el-menu-item>
-          <el-menu-item index="/student/password">修改密码</el-menu-item>
-          <el-menu-item index="/student/notification">消息通知</el-menu-item>
-        </el-sub-menu>
-      </el-menu>
-    </el-aside>
-    
-    <el-container>
-      <el-header class="dashboard-header">
-        <div class="header-content">
-          <el-button
-            type="link"
-            class="toggle-button"
-            @click="toggleSidebar"
-            aria-label="Toggle menu"
-          >
-            <el-icon :size="24" style="vertical-align: middle;">
-              <component :is="isSidebarCollapsed ? Expand : Fold" />
-            </el-icon>
-          </el-button>
-          <h1 class="header-title">修改密码</h1>
-          <el-button
-            type="danger"
-            class="logout-button"
-            @click="handleLogout"
-            style="margin-left: 15px"
-          >
-            退出登录
-          </el-button>
-        </div>
-      </el-header>
-      <el-main>
+  <StudentLayout title="修改密码">
+    <el-main>
         <el-card class="profile-card">
           <template #header>
             <div class="card-header">
@@ -90,13 +24,13 @@
           </el-form>
         </el-card>
       </el-main>
-    </el-container>
-  </el-container>
+  </StudentLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import StudentLayout from '@/layouts/StudentLayout.vue'
 
 const form = ref({
   oldPassword: '',
@@ -107,7 +41,8 @@ const loading = ref(true)
 
 const fetchUserInfo = async () => {
   try {
-    await axios.get('/api/user/me')
+    const userId = sessionStorage.getItem('userId')
+    await axios.get(`/api/user/${userId}`)
   } catch (error) {
     console.error('获取用户信息失败:', error)
   } finally {

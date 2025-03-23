@@ -123,6 +123,8 @@ export default {
           const data = await response.json();
           localStorage.setItem('authToken', data.token);
           localStorage.setItem('authRole', this.loginForm.role);
+          // 存储用户ID到sessionStorage
+          sessionStorage.setItem('userId', data.userId);
 
           // 如果选择了「记住我」，可在此设置更长的过期时间
           if (this.loginForm.rememberMe) {
