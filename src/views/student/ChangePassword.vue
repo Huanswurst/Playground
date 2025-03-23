@@ -1,7 +1,5 @@
 <template>
-  <StudentLayout title="修改密码">
-    <el-main>
-        <el-card class="profile-card">
+  <el-card class="profile-card">
           <template #header>
             <div class="card-header">
               <h2>修改密码</h2>
@@ -23,14 +21,11 @@
             </el-form-item>
           </el-form>
         </el-card>
-      </el-main>
-  </StudentLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import StudentLayout from '@/layouts/StudentLayout.vue'
 
 const form = ref({
   oldPassword: '',

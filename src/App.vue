@@ -6,11 +6,15 @@
 </script>
 
 <style>
-/* 导入字体 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+/* 系统安全字体栈 */
+@font-face {
+  font-family: 'SystemSafe';
+  src: local('PingFang SC'), local('Microsoft YaHei'), local('Source Han Sans CN'),
+    local('Segoe UI'), local('Roboto'), local('Ubuntu'), local('Cantarell'), local('Noto Sans');
+}
 
 #app {
-  font-family: 'Source Han Sans CN', 'PingFang SC', 'Microsoft YaHei', 'Inter', sans-serif;
+  font-family: SystemSafe, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;  color: #2c3e50;

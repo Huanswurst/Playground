@@ -7,7 +7,6 @@ import Recognition from '../views/recogntion.vue';
 import StudentDashboard from '../views/student/dashboard.vue';
 import StudentAttendance from '../views/student/StudentAttendance.vue';
 import FaceRecognitionAttendance from '../views/student/FaceRecognitionAttendance.vue';
-import GeoFaceRecognitionAttendance from '../views/student/GeoFaceRecognitionAttendance.vue';
 import PhotoRecognition from '../views/student/PhotoRecognition.vue';
 import StudentSelfieCapture from '../views/student/StudentSelfieCapture.vue';
 import SpecialCaseEnrollment from '../views/student/SpecialCaseEnrollment.vue';
@@ -40,20 +39,46 @@ const routes = [
   { path: '/recognition', component: Recognition },
   
   // 学生路由
-  { path: '/student/dashboard', component: StudentDashboard },
-  { path: '/student/attendance', component: StudentAttendance },
-  { path: '/student/face-recognition', component: FaceRecognitionAttendance },
   {
-    path: '/student/attendance/success',
-    name: 'AttendanceSuccess',
-    component: () => import('../views/student/AttendanceSuccess.vue')
+    path: '/student',
+    component: () => import('@/layouts/StudentLayout.vue'),
+    children: [
+      {
+        path: '',
+        redirect: 'dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'StudentDashboard',
+        component: StudentDashboard
+      },
+      {
+        path: 'attendance',
+        name: 'StudentAttendance',
+        component: StudentAttendance
+      },
+      {
+        path: 'face-recognition',
+        name: 'FaceRecognition',
+        component: FaceRecognitionAttendance
+      },
+      {
+        path: 'attendance/success',
+        name: 'AttendanceSuccess',
+        component: () => import('../views/student/AttendanceSuccess.vue')
+      },
+      {
+        path: 'profile',
+        name: 'StudentProfile',
+        component: () => import('../views/student/Profile.vue')
+      },
+      {
+        path: 'password',
+        name: 'ChangePassword',
+        component: () => import('../views/student/ChangePassword.vue')
+      },
+    ]
   },
-  { path: '/student/geo-attendance', component: GeoFaceRecognitionAttendance },
-  { path: '/student/photo-recognition', component: PhotoRecognition },
-  { path: '/student/selfie-capture', component: StudentSelfieCapture },
-  { path: '/student/special-case', component: SpecialCaseEnrollment },
-  { path: '/student/profile', component: () => import('../views/student/Profile.vue') },
-  { path: '/student/password', component: () => import('../views/student/ChangePassword.vue') },
   
   // 教师路由
   { path: '/teacher/dashboard', component: TeacherDashboard },

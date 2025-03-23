@@ -1,6 +1,5 @@
 <template>
-  <StudentLayout>
-    <el-main>
+  <el-main>
       <el-row :gutter="20">
         <el-col :span="8">
           <el-card class="stat-card" shadow="hover">
@@ -36,13 +35,11 @@
         </el-table>
       </el-card>
     </el-main>
-  </StudentLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import StudentLayout from '@/layouts/StudentLayout.vue'
 
 const router = useRouter()
 

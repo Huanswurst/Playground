@@ -1,7 +1,5 @@
 <template>
-  <StudentLayout title="个人信息">
-    <el-main>
-        <el-card class="profile-card">
+  <el-card class="profile-card">
           <template #header>
             <div class="card-header">
               <h2>个人信息</h2>
@@ -23,14 +21,11 @@
             </el-form-item>
           </el-form>
         </el-card>
-      </el-main>
-  </StudentLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import StudentLayout from '@/layouts/StudentLayout.vue'
 import axios from 'axios'
 
 const router = useRouter()

@@ -1,12 +1,5 @@
 <template>
-  <el-container class="attendance-container">
-    <el-header class="dashboard-header">
-      <div class="header-content">
-        <h1 class="header-title">课堂考勤系统</h1>
-      </div>
-    </el-header>
-
-    <el-main>
+  <el-main>
       <el-card class="success-card" shadow="hover">
         <div class="success-content">
           <el-icon class="success-icon" :size="80">
@@ -24,8 +17,7 @@
           </el-button>
         </div>
       </el-card>
-    </el-main>
-  </el-container>
+  </el-main>
 </template>
 
 <script setup>
@@ -36,11 +28,7 @@ const currentTime = ref(new Date().toLocaleString())
 </script>
 
 <style scoped lang="scss">
-.attendance-container {
-  height: 100vh;
-  background: #f0f2f5;
-
-  .dashboard-header {
+.dashboard-header {
     background: linear-gradient(135deg, #409EFF 0%, #337ecc 100%);
     .header-content {
       display: flex;
@@ -58,7 +46,7 @@ const currentTime = ref(new Date().toLocaleString())
     }
   }
 
-  .success-card {
+.success-card {
     max-width: 600px;
     margin: 40px auto;
     border-radius: 12px;
@@ -93,8 +81,6 @@ const currentTime = ref(new Date().toLocaleString())
       }
     }
   }
-}
-
 @media (max-width: 768px) {
   .success-card {
     margin: 20px!important;
