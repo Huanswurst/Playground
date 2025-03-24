@@ -6,7 +6,6 @@
           <div class="video-wrapper">
             <video ref="video" autoplay playsinline muted class="camera-video"></video>
             <canvas ref="overlay" class="overlay-canvas"></canvas>
-            <canvas ref="canvas" class="hidden-canvas"></canvas>
           </div>
 
           <div class="camera-controls">
@@ -36,52 +35,103 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElNotification } from 'element-plus'
-import * as faceapi from 'face-api.js'
-
 const video = ref(null)
-const canvas = ref(null)
 const overlay = ref(null)
 const mediaStream = ref(null)
+const isOpenCVLoaded = ref(false)
+const openCVError = ref(null)
+
+// 动态加载OpenCV
+const loadOpenCV = async () => {
+  try {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = '/opencv.js'
+      script.onload = () => {
+        cv['onRuntimeInitialized'] = () => {
+          isOpenCVLoaded.value = true
+          resolve()
+        }
+      }
+      script.onerror = (error) => {
+        openCVError.value = error
+        reject(error)
+      }
+      document.head.appendChild(script)
+    })
+  } catch (error) {
+    console.error('OpenCV加载失败:', error)
+    ElNotification.error({
+      title: 'OpenCV错误',
+      message: '无法加载OpenCV库'
+    })
+  }
+}
+
+// 初始化OpenCV分类器
+let classifier = null
+const initClassifier = () => {
+  classifier = new cv.CascadeClassifier()
+  classifier.load('/haarcascade_frontalface_default.xml')
+}
 const isCapturing = ref(false)
 const captureResult = ref('')
 const resultType = ref('info')
 const detectionActive = ref(true)
 
 let detectionInterval = null
-let animationFrameId = null
 
-const loadFaceApiModels = async () => {
+// 开始视频流
+const startVideoStream = async () => {
   try {
-    await faceapi.loadTinyFaceDetectorModel('/models')
-    await faceapi.loadFaceLandmarkTinyModel('/models')
+    // 添加摄像头请求状态提示
+    captureResult.value = '正在请求摄像头权限...'
+    resultType.value = 'info'
+    
+    // 获取并选择摄像头设备
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const videoDevices = devices.filter(device => device.kind === 'videoinput')
+    
+    if (videoDevices.length === 0) {
+      throw new Error('未检测到可用摄像头设备')
+    }
+
+    // 优先选择带有"front"标签的前置摄像头
+    const preferredCamera = videoDevices.find(device =>
+      device.label.toLowerCase().includes('front') ||
+      device.label.toLowerCase().includes('face')
+    ) || videoDevices[0]
+
+    // 初始化媒体流
+    return await initCameraStream(preferredCamera.deviceId)
   } catch (error) {
-    handleError('模型加载失败', error)
+    handleCameraError(error)
   }
 }
 
-// 初始化摄像头
-const initCamera = async () => {
+// 初始化媒体流
+const initCameraStream = async (deviceId) => {
   try {
-    const constraints = {
+    mediaStream.value = await navigator.mediaDevices.getUserMedia({
       video: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
         width: { ideal: 1280 },
         height: { ideal: 720 },
         frameRate: { ideal: 30 }
       }
-    }
-
-    mediaStream.value = await navigator.mediaDevices.getUserMedia(constraints)
-    video.value.srcObject = mediaStream.value
-
-    await new Promise((resolve) => {
-      video.value.onloadedmetadata = () => resolve()
     })
-    
+
+    video.value.srcObject = mediaStream.value
+    await new Promise(function(resolve) {
+      video.value.onloadedmetadata = function() {
+        resolve()
+      }
+    })
     adjustCanvasSize()
     video.value.play()
-    startDetectionLoop()
   } catch (error) {
     handleCameraError(error)
+    throw error
   }
 }
 
@@ -89,223 +139,20 @@ const initCamera = async () => {
 const adjustCanvasSize = () => {
   const videoEl = video.value
   const overlayEl = overlay.value
-  const canvasEl = canvas.value
 
-  if (!videoEl || !overlayEl || !canvasEl) return
+  if (!videoEl || !overlayEl) return
 
-  // 获取视频显示尺寸
-  const displayWidth = videoEl.clientWidth
-  const displayHeight = videoEl.clientHeight
-
-  // 设置canvas显示尺寸
-  overlayEl.style.width = `${displayWidth}px`
-  overlayEl.style.height = `${displayHeight}px`
-
-  // 设置canvas内部尺寸与视频流一致
   const videoWidth = videoEl.videoWidth
   const videoHeight = videoEl.videoHeight
+
   overlayEl.width = videoWidth
   overlayEl.height = videoHeight
-  canvasEl.width = videoWidth
-  canvasEl.height = videoHeight
+
+  overlayEl.style.width = `${videoEl.clientWidth}px`
+  overlayEl.style.height = `${videoEl.clientHeight}px`
 }
 
-// 启动检测循环
-const startDetectionLoop = () => {
-  stopDetectionLoop()
-  detectionActive.value = true
-  const detect = async () => {
-    if (!detectionActive.value) return
-    await detectFaces()
-    animationFrameId = requestAnimationFrame(detect)
-  }
-  detect()
-}
-
-// 停止检测循环
-const stopDetectionLoop = () => {
-  detectionActive.value = false
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId)
-  }
-}
-
-// 人脸检测处理
-const detectFaces = async () => {
-  try {
-    const detections = await faceapi.detectAllFaces(
-      video.value,
-      new faceapi.TinyFaceDetectorOptions()
-    )
-    
-    // 获取视频实际尺寸
-    const videoWidth = video.value.videoWidth
-    const videoHeight = video.value.videoHeight
-    
-    // 设置canvas尺寸与视频流一致
-    overlay.value.width = videoWidth
-    overlay.value.height = videoHeight
-    
-    // 获取canvas显示尺寸
-    const displayWidth = overlay.value.clientWidth
-    const displayHeight = overlay.value.clientHeight
-    
-    // 计算缩放比例
-    const scaleX = displayWidth / videoWidth
-    const scaleY = displayHeight / videoHeight
-    
-    // 调整canvas内部尺寸
-    overlay.value.style.width = `${displayWidth}px`
-    overlay.value.style.height = `${displayHeight}px`
-    
-    // 转换检测框坐标
-    const scaledDetections = detections.map(detection => {
-      const box = detection.box
-      return {
-        ...detection,
-        box: {
-          x: box.x * scaleX,
-          y: box.y * scaleY,
-          width: box.width * scaleX,
-          height: box.height * scaleY
-        }
-      }
-    })
-    
-    drawDetectionBox(scaledDetections)
-  } catch (error) {
-    console.error('人脸检测错误:', error)
-  }
-}
-
-// 绘制检测框
-const drawDetectionBox = (detections) => {
-  const ctx = overlay.value.getContext('2d')
-  ctx.clearRect(0, 0, overlay.value.width, overlay.value.height)
-
-  // 获取视频显示尺寸与实际尺寸的比例
-  const displayWidth = overlay.value.clientWidth
-  const displayHeight = overlay.value.clientHeight
-  const videoWidth = overlay.value.width
-  const videoHeight = overlay.value.height
-  const scaleX = displayWidth / videoWidth
-  const scaleY = displayHeight / videoHeight
-
-  // 绘制检测框
-  detections.forEach(detection => {
-    const box = detection.box
-    const score = (detection.score || 0).toFixed(2)
-    
-    // 计算缩放后的坐标
-    const scaledX = box.x * scaleX
-    const scaledY = box.y * scaleY
-    const scaledWidth = box.width * scaleX
-    const scaledHeight = box.height * scaleY
-    
-    // 由于视频是水平翻转的，需要调整x坐标
-    const adjustedX = displayWidth - scaledX - scaledWidth
-    const adjustedY = scaledY
-    
-    ctx.save()
-    // 应用水平翻转
-    ctx.scale(-1, 1)
-    ctx.translate(-displayWidth, 0)
-    
-    ctx.beginPath()
-    ctx.lineWidth = 4
-    ctx.strokeStyle = '#409EFF'
-    ctx.rect(adjustedX, adjustedY, scaledWidth, scaledHeight)
-    ctx.stroke()
-
-    ctx.fillStyle = '#409EFF'
-    ctx.font = 'bold 18px Arial'
-    ctx.fillText(`${score * 100}%`, adjustedX + 5, adjustedY - 10)
-    
-    ctx.restore()
-  })
-}
-
-// 拍摄自拍照
-const captureSelfie = async () => {
-  if (isCapturing.value) return
-  isCapturing.value = true
-  captureResult.value = '正在拍摄自拍照...'
-  resultType.value = 'info'
-
-  try {
-    // 获取视频帧
-    const videoEl = video.value
-    const canvasEl = canvas.value
-    canvasEl.width = videoEl.videoWidth
-    canvasEl.height = videoEl.videoHeight
-    
-    const ctx = canvasEl.getContext('2d')
-    ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height)
-    
-    // 将图像转换为Blob
-    canvasEl.toBlob(async (blob) => {
-      try {
-        // 上传自拍照并进行比对
-        const formData = new FormData()
-        formData.append('file', blob, 'selfie.jpg')
-        
-        const response = await fetch('/api/compare_faces', {
-          method: 'POST',
-          body: formData
-        })
-        
-        if (!response.ok) {
-          throw new Error('比对失败')
-        }
-
-        const result = await response.json()
-        if (result.match) {
-          captureResult.value = '比对成功，身份验证通过'
-          resultType.value = 'success'
-          // 执行录入系统逻辑
-          await enrollStudent()
-        } else {
-          captureResult.value = '比对失败，请重试'
-          resultType.value = 'error'
-        }
-      } catch (error) {
-        captureResult.value = '自拍照比对失败'
-        resultType.value = 'error'
-        throw error
-      } finally {
-        isCapturing.value = false
-      }
-    }, 'image/jpeg', 0.9)
-  } catch (error) {
-    captureResult.value = '拍摄自拍照失败'
-    resultType.value = 'error'
-    isCapturing.value = false
-  }
-}
-
-// 录入学生信息
-const enrollStudent = async () => {
-  try {
-    const response = await fetch('/api/enroll_student', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        // 学生信息
-      })
-    })
-    
-    if (!response.ok) {
-      throw new Error('录入失败')
-    }
-  } catch (error) {
-    captureResult.value = '学生信息录入失败'
-    resultType.value = 'error'
-    throw error
-  }
-}
-
+// 摄像头错误处理
 // 摄像头错误处理
 const handleCameraError = (error) => {
   let message = '摄像头访问失败：'
@@ -326,130 +173,190 @@ const handleCameraError = (error) => {
     duration: 5000
   })
 }
+    
+    // 验证视频元素
+    if (!video.value) {
+      throw new Error('视频元素未正确绑定')
+    }
+    
+    video.value.srcObject = mediaStream.value
+    
+    // 添加调试信息
+    console.log('摄像头设备:', videoDevices)
+    console.log('媒体流状态:', mediaStream.value)
+    
+    await new Promise(resolve => {
+      video.value.onloadedmetadata = () => {
+        console.log('视频元数据加载完成')
+        resolve()
+      }
+      video.value.onerror = (error) => {
+        console.error('视频加载错误:', error)
+        throw error
+      }
+    })
+    
+    startDetection()
+  } catch (error) {
+    console.error('无法访问摄像头:', error)
+    ElNotification.error({
+      title: '摄像头错误',
+      message: `无法访问摄像头: ${error.message}`
+    })
+  }
+}
 
-// 生命周期钩子
+// 开始检测
+const startDetection = () => {
+  detectionInterval = setInterval(() => {
+    if (!detectionActive.value) return
+    
+    const srcMat = new cv.Mat(video.value.height, video.value.width, cv.CV_8UC4)
+    const cap = new cv.VideoCapture(video.value)
+    cap.read(srcMat)
+    
+    // 确保成功读取视频帧
+    if (srcMat.empty()) {
+      srcMat.delete()
+      cap.delete()
+      return
+    }
+    
+    // 转换为灰度图
+    const grayMat = new cv.Mat()
+    cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY)
+    
+    // 检测人脸
+    const faces = new cv.RectVector()
+    classifier.detectMultiScale(grayMat, faces)
+    
+    drawDetections(faces)
+    
+    srcMat.delete()
+    grayMat.delete()
+    faces.delete()
+  }, 100)
+}
+
+// 绘制检测框
+const drawDetections = (faces) => {
+  const ctx = overlay.value.getContext('2d')
+  ctx.clearRect(0, 0, overlay.value.width, overlay.value.height)
+  
+  // 调整canvas尺寸
+  const displayWidth = overlay.value.clientWidth
+  const displayHeight = overlay.value.clientHeight
+  const scaleX = displayWidth / video.value.videoWidth
+  const scaleY = displayHeight / video.value.videoHeight
+
+  for (let i = 0; i < faces.size(); i++) {
+    const face = faces.get(i)
+    
+    // 计算缩放后的坐标
+    const scaledX = face.x * scaleX
+    const scaledY = face.y * scaleY
+    const scaledWidth = face.width * scaleX
+    const scaledHeight = face.height * scaleY
+    
+    // 由于视频是水平翻转的，需要调整x坐标
+    const adjustedX = displayWidth - scaledX - scaledWidth
+    
+    // 绘制矩形框
+    ctx.strokeStyle = '#409EFF'
+    ctx.lineWidth = 4
+    ctx.strokeRect(adjustedX, scaledY, scaledWidth, scaledHeight)
+  }
+}
+
+// 拍摄自拍照
+const captureSelfie = async () => {
+  isCapturing.value = true
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = video.value.videoWidth
+    canvas.height = video.value.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video.value, 0, 0, canvas.width, canvas.height)
+    
+    // 保存或处理图片
+    const imageData = canvas.toDataURL('image/png')
+    console.log('Captured image:', imageData)
+    
+    captureResult.value = '自拍照拍摄成功'
+    resultType.value = 'success'
+  } catch (error) {
+    console.error('拍摄失败:', error)
+    captureResult.value = '自拍照拍摄失败'
+    resultType.value = 'error'
+  } finally {
+    isCapturing.value = false
+  }
+}
+
 onMounted(async () => {
   try {
-    await loadFaceApiModels()
-    await initCamera()
-    window.addEventListener('resize', adjustCanvasSize)
+    await loadOpenCV()
+    initClassifier()
+    await startVideoStream()
   } catch (error) {
-    captureResult.value = '初始化失败，请刷新页面重试'
+    console.error('初始化失败:', error)
+    ElNotification.error({
+      title: '初始化错误',
+      message: '组件初始化失败'
+    })
   }
 })
 
 onBeforeUnmount(() => {
-  stopDetectionLoop()
   if (mediaStream.value) {
     mediaStream.value.getTracks().forEach(track => track.stop())
   }
-  window.removeEventListener('resize', adjustCanvasSize)
+  clearInterval(detectionInterval)
 })
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .selfie-container {
-  height: 100vh;
-  background: #f0f2f5;
-
-  .dashboard-header {
-    background: linear-gradient(135deg, #409EFF 0%, #337ecc 100%);
-    .header-content {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      padding: 0 24px;
-      
-      .header-title {
-        margin: 0;
-        color: white;
-        font-size: 24px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-      }
-    }
-  }
-
-  .camera-card {
-    max-width: 800px;
-    margin: 24px auto;
-    border-radius: 12px;
-    overflow: hidden;
-    
-    .camera-section {
-      position: relative;
-      padding: 16px;
-      background: #f8f9fa;
-      border-radius: 8px;
-
-      .video-wrapper {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16/9;
-        background: #000;
-        border-radius: 8px;
-        overflow: hidden;
-        
-        .camera-video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transform: scaleX(-1); /* 水平翻转 */
-          aspect-ratio: 16/9;
-        }
-        
-        .overlay-canvas {
-          position: absolute;
-          top: 0;
-          left: 0;
-          pointer-events: none;
-        }
-      }
-
-      .camera-controls {
-        margin-top: 16px;
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-        
-        .control-button {
-          padding: 12px 24px;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-        }
-      }
-    }
-
-    .capture-result {
-      margin-top: 16px;
-      transition: all 0.3s ease;
-    }
-  }
+  height: calc(100vh - 60px);
 }
 
-.hidden-canvas {
-  display: none;
+.camera-card {
+  max-width: 900px;
+  margin: 20px auto;
 }
 
-@media (max-width: 768px) {
-  .dashboard-header {
-    padding: 0 12px !important;
-    
-    .header-title {
-      font-size: 18px !important;
-    }
-  }
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 宽高比 */
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+}
 
-  .camera-card {
-    margin: 12px;
-    
-    .camera-controls {
-      flex-direction: column;
-      
-      .control-button {
-        width: 100%;
-      }
-    }
-  }
+.camera-video,
+.overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1); /* 水平镜像 */
+  object-fit: cover;
+}
+
+.camera-controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.control-button {
+  width: 200px;
+  height: 50px;
+  font-size: 16px;
+}
+
+.capture-result {
+  margin-top: 15px;
 }
 </style>

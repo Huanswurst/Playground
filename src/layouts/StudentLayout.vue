@@ -32,8 +32,8 @@
               <span>课程信息</span>
             </template>
             <el-menu-item index="/student/course-schedule">课程表</el-menu-item>
-            <el-menu-item index="/student/course/materials">课程资料</el-menu-item>
-            <el-menu-item index="/student/course/assignments">作业提交</el-menu-item>
+              <!-- <el-menu-item index="/student/course/materials">课程资料</el-menu-item> -->
+            <!-- <el-menu-item index="/student/course/assignments">作业提交</el-menu-item> -->
           </el-sub-menu>
 
           <el-sub-menu index="4">
