@@ -80,7 +80,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email', 'display_name', 'role']
+        fields = ['username', 'email', 'role']
 
 class StudentSerializer(serializers.ModelSerializer):
     user = UserSerializer()

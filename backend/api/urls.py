@@ -32,6 +32,7 @@ urlpatterns = [
     path('register/', views.RegisterAPI.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('current_user/', views.current_user, name='current_user'),
+    path('user/me/', views.current_user, name='current_user_me'),
     path('logout/', views.logout, name='logout'),
     path('test/', views.test_api, name='test_api'),
     path('face/match/', views.FaceMatchAPI.as_view(), name='face-match'),
@@ -53,7 +54,13 @@ urlpatterns = [
     path('admin/logs/', views.LogManagementAPI.as_view(), name='log-management'),
     path('admin/permissions/', views.PermissionManagementAPI.as_view(), name='permission-management'),
     path('admin/settings/', views.SystemSettingsAPI.as_view(), name='system-settings'),
+    path('change-password/', views.ChangePasswordAPI.as_view(), name='change_password'),
     
     # 对象识别API
     path('object-recognition/', views.ObjectRecognitionAPI.as_view(), name='object-recognition'),
+    
+    # 用户信息API
+    path('users/<int:pk>/', views.UserDetailAPI.as_view(), name='user-detail'),
+    # 密码修改API
+    path('users/change-password/', views.ChangePasswordAPI.as_view(), name='change-password'),
 ]

@@ -21,5 +21,12 @@ export default defineConfig({
   server: {
     port: 5173, // 更换为 8080 或其他高端口
     host: '0.0.0.0', // 允许外部访问
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path
+      }
+    }
   },
 })

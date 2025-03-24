@@ -32,7 +32,7 @@ class User(AbstractUser):
     )
 
     def __str__(self):
-        return self.display_name or self.username
+        return self.username
 
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)

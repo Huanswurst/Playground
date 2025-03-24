@@ -67,6 +67,7 @@
 </template>
 
 <script>
+import { ElMessage } from 'element-plus';
 import { apiBaseUrl } from '../config';
 
 export default {
@@ -119,36 +120,20 @@ export default {
             const errorData = await response.json();
             throw new Error(errorData.detail || '登录失败');
           }
-
+          
           const data = await response.json();
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('authRole', this.loginForm.role);
-          // 存储用户ID到sessionStorage
-          sessionStorage.setItem('userId', data.userId);
-
-          // 如果选择了「记住我」，可在此设置更长的过期时间
-          if (this.loginForm.rememberMe) {
-            // 例如，7 天后过期
-            const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
-            localStorage.setItem('authExpires', future.toString());
-          } else {
-            // 不记住我，设置短时间或不设置 expires
-            const soon = Date.now() + 2 * 60 * 60 * 1000;
-            localStorage.setItem('authExpires', soon.toString());
+          console.log('API 响应:', data);  // 调试用
+          if (!data?.userId) {
+            throw new Error('无效的用户数据');
           }
-
-          this.token = data.token;
-
-          // 根据角色跳转
-          if (this.loginForm.role === 'admin') {
-            this.$router.push('/admin/dashboard');
-          } else if (this.loginForm.role === 'student') {
-            this.$router.push('/student/dashboard');
-          } else if (this.loginForm.role === 'teacher') {
-            this.$router.push('/teacher/dashboard');
-          }
+          localStorage.setItem('userId', data.userId);
+          localStorage.setItem('authToken', data.access);
+          localStorage.setItem('refreshToken', data.refresh);
+          this.$message.success('登录成功');
+          await this.$router.push('/student/dashboard');
         } catch (error) {
-          this.$message.error(error.message);
+          console.error('登录失败:', error);
+          ElMessage.error(error.message || '登录失败');
         } finally {
           this.isLoggingIn = false;
         }

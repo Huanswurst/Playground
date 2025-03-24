@@ -31,7 +31,12 @@ class LoginView(TokenObtainPairView):
                 'detail': str(e)
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        user = serializer.user
+        response_data = {
+            **serializer.validated_data,
+            'userId': user.id
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions
@@ -372,6 +377,34 @@ class SystemSettingsAPI(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 对象识别API
+class UserDetailAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            # 管理员可以查看所有用户信息
+            if request.user.is_staff:
+                user = User.objects.get(pk=pk)
+            # 普通用户只能查看自己的信息
+            elif str(request.user.id) == str(pk):
+                user = request.user
+            else:
+                return Response({'error': '没有权限访问该用户信息'},
+                             status=status.HTTP_403_FORBIDDEN)
+            
+            # 根据用户角色返回不同信息
+            if hasattr(user, 'student'):
+                serializer = StudentSerializer(user.student)
+            elif hasattr(user, 'staff'):
+                serializer = StaffSerializer(user.staff)
+            else:
+                serializer = UserSerializer(user)
+                
+            return Response(serializer.data)
+            
+        except User.DoesNotExist:
+            return Response({'error': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
+
 class ObjectRecognitionAPI(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -465,6 +498,27 @@ class ClassViewSet(viewsets.ModelViewSet):
     queryset = Class.objects.all()
     serializer_class = ClassSerializer
     permission_classes = [IsAdminUser]
+
+class ChangePasswordAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not all([old_password, new_password]):
+            return Response({'error': '缺少必要参数'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.check_password(old_password):
+            return Response({'error': '原密码错误'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': '密码修改成功'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -675,12 +729,27 @@ def logout(request):
 def current_user(request):
     if request.user.is_authenticated:
         user = request.user
-        return Response({
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'is_staff': user.is_staff
-        })
+        try:
+            student = Student.objects.get(user=user)
+            return Response({
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'is_staff': user.is_staff,
+                'name': student.name,
+                'studentId': student.student_number,
+                'firstName': user.first_name,
+                'lastName': user.last_name
+            })
+        except Student.DoesNotExist:
+            return Response({
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'is_staff': user.is_staff,
+                'name': user.first_name + ' ' + user.last_name,
+                'studentId': None
+            })
     return Response({'error': '用户未登录'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['GET'])
