@@ -31,7 +31,7 @@
               <el-icon><notebook /></el-icon>
               <span>课程信息</span>
             </template>
-            <el-menu-item index="/student/course/schedule">课程表</el-menu-item>
+            <el-menu-item index="/student/course-schedule">课程表</el-menu-item>
             <el-menu-item index="/student/course/materials">课程资料</el-menu-item>
             <el-menu-item index="/student/course/assignments">作业提交</el-menu-item>
           </el-sub-menu>
@@ -43,7 +43,6 @@
             </template>
             <el-menu-item index="/student/profile">个人信息</el-menu-item>
             <el-menu-item index="/student/password">修改密码</el-menu-item>
-            <el-menu-item index="/student/notification">消息通知</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>

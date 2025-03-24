@@ -42,14 +42,6 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button type="success" @click="handleExport">导出数据</el-button>
-          <el-button type="info" @click="handleSwitchCamera">
-            <el-icon><switch /></el-icon>
-            <span>切换摄像头</span>
-          </el-button>
-          <el-button type="warning" @click="handleStartRecognition">
-            <el-icon><camera /></el-icon>
-            <span>开始识别</span>
-          </el-button>
         </el-form-item>
       </el-form>
 
@@ -99,6 +91,9 @@
 </template>
 
 <script>
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
 export default {
   data() {
     return {

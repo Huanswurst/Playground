@@ -1,11 +1,5 @@
 <template>
   <el-container class="selfie-container">
-    <el-header class="dashboard-header">
-      <div class="header-content">
-        <h1 class="header-title">学生自拍</h1>
-      </div>
-    </el-header>
-    
     <el-main>
       <el-card class="camera-card" shadow="hover">
         <div class="camera-section">
@@ -99,16 +93,21 @@ const adjustCanvasSize = () => {
 
   if (!videoEl || !overlayEl || !canvasEl) return
 
+  // 获取视频显示尺寸
+  const displayWidth = videoEl.clientWidth
+  const displayHeight = videoEl.clientHeight
+
+  // 设置canvas显示尺寸
+  overlayEl.style.width = `${displayWidth}px`
+  overlayEl.style.height = `${displayHeight}px`
+
+  // 设置canvas内部尺寸与视频流一致
   const videoWidth = videoEl.videoWidth
   const videoHeight = videoEl.videoHeight
-
   overlayEl.width = videoWidth
   overlayEl.height = videoHeight
   canvasEl.width = videoWidth
   canvasEl.height = videoHeight
-
-  overlayEl.style.width = `${videoEl.clientWidth}px`
-  overlayEl.style.height = `${videoEl.clientHeight}px`
 }
 
 // 启动检测循环
@@ -138,7 +137,42 @@ const detectFaces = async () => {
       video.value,
       new faceapi.TinyFaceDetectorOptions()
     )
-    drawDetectionBox(detections)
+    
+    // 获取视频实际尺寸
+    const videoWidth = video.value.videoWidth
+    const videoHeight = video.value.videoHeight
+    
+    // 设置canvas尺寸与视频流一致
+    overlay.value.width = videoWidth
+    overlay.value.height = videoHeight
+    
+    // 获取canvas显示尺寸
+    const displayWidth = overlay.value.clientWidth
+    const displayHeight = overlay.value.clientHeight
+    
+    // 计算缩放比例
+    const scaleX = displayWidth / videoWidth
+    const scaleY = displayHeight / videoHeight
+    
+    // 调整canvas内部尺寸
+    overlay.value.style.width = `${displayWidth}px`
+    overlay.value.style.height = `${displayHeight}px`
+    
+    // 转换检测框坐标
+    const scaledDetections = detections.map(detection => {
+      const box = detection.box
+      return {
+        ...detection,
+        box: {
+          x: box.x * scaleX,
+          y: box.y * scaleY,
+          width: box.width * scaleX,
+          height: box.height * scaleY
+        }
+      }
+    })
+    
+    drawDetectionBox(scaledDetections)
   } catch (error) {
     console.error('人脸检测错误:', error)
   }
@@ -149,19 +183,45 @@ const drawDetectionBox = (detections) => {
   const ctx = overlay.value.getContext('2d')
   ctx.clearRect(0, 0, overlay.value.width, overlay.value.height)
 
+  // 获取视频显示尺寸与实际尺寸的比例
+  const displayWidth = overlay.value.clientWidth
+  const displayHeight = overlay.value.clientHeight
+  const videoWidth = overlay.value.width
+  const videoHeight = overlay.value.height
+  const scaleX = displayWidth / videoWidth
+  const scaleY = displayHeight / videoHeight
+
+  // 绘制检测框
   detections.forEach(detection => {
     const box = detection.box
-    const score = detection.score.toFixed(2)
+    const score = (detection.score || 0).toFixed(2)
+    
+    // 计算缩放后的坐标
+    const scaledX = box.x * scaleX
+    const scaledY = box.y * scaleY
+    const scaledWidth = box.width * scaleX
+    const scaledHeight = box.height * scaleY
+    
+    // 由于视频是水平翻转的，需要调整x坐标
+    const adjustedX = displayWidth - scaledX - scaledWidth
+    const adjustedY = scaledY
+    
+    ctx.save()
+    // 应用水平翻转
+    ctx.scale(-1, 1)
+    ctx.translate(-displayWidth, 0)
     
     ctx.beginPath()
     ctx.lineWidth = 4
     ctx.strokeStyle = '#409EFF'
-    ctx.rect(box.x, box.y, box.width, box.height)
+    ctx.rect(adjustedX, adjustedY, scaledWidth, scaledHeight)
     ctx.stroke()
 
     ctx.fillStyle = '#409EFF'
     ctx.font = 'bold 18px Arial'
-    ctx.fillText(`${score * 100}%`, box.x + 5, box.y - 10)
+    ctx.fillText(`${score * 100}%`, adjustedX + 5, adjustedY - 10)
+    
+    ctx.restore()
   })
 }
 
@@ -325,7 +385,7 @@ onBeforeUnmount(() => {
       .video-wrapper {
         position: relative;
         width: 100%;
-        aspect-ratio: 4/3;
+        aspect-ratio: 16/9;
         background: #000;
         border-radius: 8px;
         overflow: hidden;
@@ -334,6 +394,8 @@ onBeforeUnmount(() => {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          transform: scaleX(-1); /* 水平翻转 */
+          aspect-ratio: 16/9;
         }
         
         .overlay-canvas {

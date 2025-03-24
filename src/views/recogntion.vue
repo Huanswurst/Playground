@@ -10,7 +10,12 @@
             <template #header>
               <span>摄像头画面</span>
             </template>
-            <video ref="video" autoplay :style="{ width: isMobile ? '100%' : '100%' }"></video>
+            <video ref="video" autoplay :style="{
+              width: isMobile ? '100%' : '100%',
+              height: isMobile ? 'auto' : '56.25%', // 16:9 aspect ratio
+              'aspect-ratio': '16/9',
+              'object-fit': 'cover'
+            }"></video>
             <el-divider />
             <div class="camera-actions">
               <el-button type="primary" @click="startCamera">启动摄像头</el-button>

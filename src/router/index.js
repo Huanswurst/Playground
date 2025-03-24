@@ -77,6 +77,20 @@ const routes = [
         name: 'ChangePassword',
         component: () => import('../views/student/ChangePassword.vue')
       },
+      {
+        path: 'course-schedule',
+        name: 'CourseSchedule',
+        component: () => import('../views/student/CourseSchedule.vue')
+      },
+      {
+        path: 'selfie-capture',
+        name: 'StudentSelfieCapture',
+        component: StudentSelfieCapture,
+        props: {
+          default: true,
+          title: '学生自拍'
+        }
+      },
     ]
   },
   
