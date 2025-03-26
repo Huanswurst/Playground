@@ -81,7 +81,7 @@ const detectionActive = ref(true)
 
 let detectionInterval = null
 
-// 开始视频流
+// 初始化摄像头并启动检测
 const startVideoStream = async () => {
   try {
     // 添加摄像头请求状态提示
@@ -96,42 +96,24 @@ const startVideoStream = async () => {
       throw new Error('未检测到可用摄像头设备')
     }
 
-    // 优先选择带有"front"标签的前置摄像头
+    // 优先选择前置摄像头
     const preferredCamera = videoDevices.find(device =>
       device.label.toLowerCase().includes('front') ||
       device.label.toLowerCase().includes('face')
     ) || videoDevices[0]
 
     // 初始化媒体流
-    return await initCameraStream(preferredCamera.deviceId)
+    await initCameraStream(preferredCamera.deviceId)
+    
+    // 启动人脸检测
+    if (isOpenCVLoaded.value) {
+      startDetection()
+    } else {
+      throw new Error('OpenCV未加载完成')
+    }
+    
   } catch (error) {
     handleCameraError(error)
-  }
-}
-
-// 初始化媒体流
-const initCameraStream = async (deviceId) => {
-  try {
-    mediaStream.value = await navigator.mediaDevices.getUserMedia({
-      video: {
-        deviceId: deviceId ? { exact: deviceId } : undefined,
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30 }
-      }
-    })
-
-    video.value.srcObject = mediaStream.value
-    await new Promise(function(resolve) {
-      video.value.onloadedmetadata = function() {
-        resolve()
-      }
-    })
-    adjustCanvasSize()
-    video.value.play()
-  } catch (error) {
-    handleCameraError(error)
-    throw error
   }
 }
 
@@ -153,7 +135,6 @@ const adjustCanvasSize = () => {
 }
 
 // 摄像头错误处理
-// 摄像头错误处理
 const handleCameraError = (error) => {
   let message = '摄像头访问失败：'
   switch (error.name) {
@@ -173,38 +154,42 @@ const handleCameraError = (error) => {
     duration: 5000
   })
 }
-    
-    // 验证视频元素
-    if (!video.value) {
-      throw new Error('视频元素未正确绑定')
-    }
-    
+
+// 初始化媒体流
+const initCameraStream = async (deviceId) => {
+  try {
+    mediaStream.value = await navigator.mediaDevices.getUserMedia({
+      video: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 }
+      }
+    })
+
     video.value.srcObject = mediaStream.value
     
-    // 添加调试信息
-    console.log('摄像头设备:', videoDevices)
-    console.log('媒体流状态:', mediaStream.value)
-    
-    await new Promise(resolve => {
+    // 等待视频元数据加载
+    await new Promise((resolve, reject) => {
       video.value.onloadedmetadata = () => {
         console.log('视频元数据加载完成')
         resolve()
       }
       video.value.onerror = (error) => {
         console.error('视频加载错误:', error)
-        throw error
+        reject(error)
       }
     })
-    
-    startDetection()
+
+    adjustCanvasSize()
+    video.value.play()
+    return mediaStream.value
   } catch (error) {
-    console.error('无法访问摄像头:', error)
-    ElNotification.error({
-      title: '摄像头错误',
-      message: `无法访问摄像头: ${error.message}`
-    })
+    handleCameraError(error)
+    throw error
   }
 }
+    
 
 // 开始检测
 const startDetection = () => {

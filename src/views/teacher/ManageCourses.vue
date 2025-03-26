@@ -132,7 +132,11 @@
             v-loading="loading"
           >
             <el-table-column prop="courseCode" label="课程代码" width="120" sortable />
-            <el-table-column prop="courseName" label="课程名称" width="180" sortable />
+            <el-table-column prop="courseName" label="课程名称" width="180" sortable>
+              <template #default="{row}">
+                {{ row?.courseName || '-' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="academicYear" label="学年" width="100" sortable />
             <el-table-column prop="semester" label="学期" width="100" sortable />
             <el-table-column label="授课教师" width="140" sortable>
