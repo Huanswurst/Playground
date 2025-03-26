@@ -67,7 +67,7 @@ export default {
         role: [{ required: true, message: '请选择角色', trigger: 'change' }],
         username: [
           { required: true, message: '用户名不能为空', trigger: 'blur' },
-          { min: 3, max: 16, message: '用户名长度应为 3 到 16 个字符', trigger: 'blur' },
+          { min: 4, max: 16, message: '用户名长度应为 4 到 16 个字符', trigger: 'blur' },
         ],
         email: [
           { required: true, message: '请输入邮箱地址', trigger: 'blur' },
@@ -75,7 +75,7 @@ export default {
         ],
         password: [
           { required: true, message: '密码不能为空', trigger: 'blur' },
-          { min: 6, max: 16, message: '密码长度应为 6 到 16 个字符', trigger: 'blur' },
+          { min: 8, max: 16, message: '密码长度应为 8 到 16 个字符', trigger: 'blur' },
         ],
         confirmPassword: [
           { required: true, message: '请再次输入密码', trigger: 'blur' },
@@ -107,9 +107,27 @@ export default {
               let errorMessage = '注册失败';
               try {
                 const errorData = await response.clone().json();
-                errorMessage = errorData.detail || errorMessage;
+                console.log('Error data:', errorData); // 调试日志
+                
+                // 处理DRF返回的错误格式
+                if (errorData && typeof errorData === 'object') {
+                  // 1. 检查是否有detail字段
+                  if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                  }
+                  // 2. 检查字段级错误
+                  else {
+                    for (const [field, errors] of Object.entries(errorData)) {
+                      if (Array.isArray(errors) && errors.length > 0) {
+                        errorMessage = `${field}: ${errors[0]}`;
+                        break;
+                      }
+                    }
+                  }
+                }
               } catch (e) {
-                errorMessage = await response.clone().text() || errorMessage;
+                console.error('Error parsing response:', e);
+                errorMessage = await response.text() || errorMessage;
               }
               throw new Error(errorMessage);
             }

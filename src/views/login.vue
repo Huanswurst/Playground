@@ -73,7 +73,7 @@ import { apiBaseUrl } from '../config';
 export default {
   data() {
     return {
-      loginForm: {
+      loginForm: {  
         role: 'student',
         username: '',
         password: '',
@@ -112,7 +112,8 @@ export default {
             },
             body: JSON.stringify({
               username: this.loginForm.username,
-              password: this.loginForm.password
+              password: this.loginForm.password,
+              role: this.loginForm.role
             })
           });
 
@@ -123,14 +124,15 @@ export default {
           
           const data = await response.json();
           console.log('API 响应:', data);  // 调试用
-          if (!data?.userId) {
+          if (!data?.user_id) {
             throw new Error('无效的用户数据');
           }
-          localStorage.setItem('userId', data.userId);
+          localStorage.setItem('userId', data.user_id);
           localStorage.setItem('authToken', data.access);
           localStorage.setItem('refreshToken', data.refresh);
+          localStorage.setItem('authRole', this.loginForm.role);
           this.$message.success('登录成功');
-          await this.$router.push('/student/dashboard');
+          await this.$router.push(`/${this.loginForm.role}/dashboard`);
         } catch (error) {
           console.error('登录失败:', error);
           ElMessage.error(error.message || '登录失败');

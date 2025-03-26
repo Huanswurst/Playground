@@ -1,42 +1,15 @@
 from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.views import APIView
+from rest_framework.renderers import JSONRenderer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import status
 from rest_framework.response import Response
 
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate, login as auth_login
 
-        # 添加自定义声明
-        token['username'] = user.username
-        token['role'] = user.role
-
-        return token
-
-class LoginView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception as e:
-            return Response({
-                'error': 'Invalid credentials',
-                'detail': str(e)
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
-        user = serializer.user
-        response_data = {
-            **serializer.validated_data,
-            'userId': user.id
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions
@@ -49,7 +22,7 @@ import numpy as np
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth import authenticate, login, logout
-from django.db.models import Count, Sum, Avg
+from django.db.models import Count, Sum, Avg, Q
 from .models import User, Student, Staff, Course, AttendanceEvent, AttendanceRecord, CourseParticipant, SystemLog
 from .serializers import *
 # import face_recognition
@@ -459,7 +432,7 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 class CourseManagementViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
@@ -660,9 +633,28 @@ class TeacherCourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated]
+    renderer_classes = [JSONRenderer]
 
     def get_queryset(self):
-        return self.queryset.filter(teacher__user=self.request.user)
+        queryset = self.queryset.filter(
+            courseparticipant__role='teacher'
+        ).distinct()
+        
+        # 优先使用teacher_id参数
+        teacher_id = self.request.query_params.get('teacher_id')
+        if teacher_id:
+            queryset = queryset.filter(
+                courseparticipant__staff__user_id=teacher_id
+            )
+        # 如果没有teacher_id参数，使用认证用户
+        elif hasattr(self.request.user, 'staff'):
+            queryset = queryset.filter(
+                courseparticipant__staff__user=self.request.user
+            )
+        else:
+            return Course.objects.none()
+            
+        return queryset
 
 class TeacherAttendanceEventViewSet(viewsets.ModelViewSet):
     queryset = AttendanceEvent.objects.all()
@@ -705,14 +697,15 @@ def login(request):
                 'detail': '请联系管理员激活账户'
             }, status=status.HTTP_403_FORBIDDEN)
             
-        token, created = Token.objects.get_or_create(user=user)
+        refresh = TokenObtainPairSerializer.get_token(user)
         return Response({
             'user_id': user.pk,
             'username': user.username,
             'email': user.email,
-            'token': token.key,
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
             'is_active': user.is_active,
-            'role': user.role  # 假设用户模型有role字段
+            'role': user.role
         })
     else:
         return Response({

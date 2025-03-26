@@ -152,8 +152,9 @@
                 </el-statistic>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="200">
+            <el-table-column label="操作" width="280">
               <template #default="{ row }">
+                <el-button type="primary" @click="handleAddCourse(row)">编辑</el-button>
                 <el-button type="primary" @click="handleViewStudents(row)">管理学生</el-button>
                 <el-button type="primary" @click="handleViewAttendance(row)">查看考勤</el-button>
                 <el-button type="danger" @click="handleDeleteCourse(row)">删除</el-button>
@@ -161,6 +162,48 @@
             </el-table-column>
           </el-table>
         </el-card>
+
+        <!-- 添加/编辑课程对话框 -->
+        <el-dialog
+          v-model="courseDialogVisible"
+          :title="selectedCourse ? '编辑课程' : '新建课程'"
+          width="50%"
+        >
+          <el-form :model="courseForm" label-width="120px">
+            <el-form-item label="课程代码" required>
+              <el-input v-model="courseForm.courseCode" placeholder="请输入课程代码" />
+            </el-form-item>
+            <el-form-item label="课程名称" required>
+              <el-input v-model="courseForm.courseName" placeholder="请输入课程名称" />
+            </el-form-item>
+            <el-form-item label="学年" required>
+              <el-date-picker
+                v-model="courseForm.academicYear"
+                type="year"
+                value-format="YYYY"
+                placeholder="选择学年"
+              />
+            </el-form-item>
+            <el-form-item label="学期" required>
+              <el-select v-model="courseForm.semester" placeholder="请选择学期">
+                <el-option label="春季" value="spring" />
+                <el-option label="秋季" value="fall" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="课程描述">
+              <el-input
+                v-model="courseForm.description"
+                type="textarea"
+                :rows="3"
+                placeholder="请输入课程描述"
+              />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="courseDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="handleSaveCourse">保存</el-button>
+          </template>
+        </el-dialog>
 
         <!-- 学生管理对话框 -->
         <el-dialog
@@ -181,8 +224,10 @@
 
 <script setup>
 import { Menu as IconMenu, Setting, Expand, Fold } from '@element-plus/icons-vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiBaseUrl } from '../../config';
 import axios from 'axios'
 import StudentManagement from './StudentManagement.vue'
 
@@ -197,33 +242,117 @@ const handleLogout = () => {
 
 const router = useRouter()
 const isMobile = ref(false)
-const searchQuery = ref('')
 const courseCount = ref(0)
 const studentCount = ref(0)
 const courses = ref([])
 const loading = ref(false)
 
-// 学生管理相关状态
+// 过滤参数
+const filterParams = ref({
+  courseName: '',
+  baseYear: '',
+  targetYear: '',
+  semester: '',
+  isRecurring: false,
+  showAll: false
+})
+
+// 对话框相关状态
 const studentDialogVisible = ref(false)
+const courseDialogVisible = ref(false)
 const selectedCourse = ref(null)
+const courseForm = ref({
+  courseCode: '',
+  courseName: '',
+  academicYear: '',
+  semester: 'spring',
+  description: ''
+})
 
 // 计算属性
 const filteredCourses = computed(() => {
-  return courses.value.filter((item) =>
-    item.courseName.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+  return courses.value.filter((item) => {
+    try {
+      if (!item || typeof item !== 'object') return false
+      
+      // 课程名称过滤
+      const name = item.courseName || ''
+      const nameQuery = filterParams.value.courseName || ''
+      if (nameQuery && !name.toLowerCase().includes(nameQuery.toLowerCase())) {
+        return false
+      }
+
+      // 学年过滤
+      const year = item.academicYear || ''
+      const baseYear = filterParams.value.baseYear || ''
+      const targetYear = filterParams.value.targetYear || ''
+      if (baseYear && year !== baseYear) {
+        return false
+      }
+      if (targetYear && year !== targetYear) {
+        return false
+      }
+
+      // 学期过滤
+      const semester = item.semester || ''
+      const semesterQuery = filterParams.value.semester || ''
+      if (semesterQuery && semester !== semesterQuery) {
+        return false
+      }
+
+      // 重复课程过滤
+      const isRecurring = item.isRecurring || false
+      if (filterParams.value.isRecurring && !isRecurring) {
+        return false
+      }
+
+      // 显示历史课程过滤
+      const isCurrent = item.isCurrent || true
+      if (!filterParams.value.showAll && !isCurrent) {
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('过滤课程出错:', error)
+      return false
+    }
+  })
 })
 
 // 获取课程列表
 const fetchCourses = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/teacher_courses/')
-    courses.value = response.data
-    courseCount.value = courses.value.length
-    studentCount.value = courses.value.reduce((sum, course) => sum + course.studentCount, 0)
+    const token = localStorage.getItem('authToken')
+    if (!token) {
+      throw new Error('请先登录')
+    }
+
+    const response = await axios.get(`${apiBaseUrl}/api/teacher/courses`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    console.log('API响应数据:', response.data)
+    if (response.data && Array.isArray(response.data)) {
+      courses.value = response.data
+      courseCount.value = courses.value.length
+      studentCount.value = courses.value.reduce((sum, course) => sum + (course.studentCount || 0), 0)
+    } else {
+      throw new Error('API返回数据格式不正确')
+    }
   } catch (error) {
     console.error('获取课程列表失败:', error)
+    if (error.response?.status === 401) {
+      localStorage.clear()
+      ElMessage.error('登录已过期，请重新登录')
+      await router.push('/login')
+    } else {
+      ElMessage.error(error.response?.data?.detail || error.message || '获取课程列表失败')
+    }
+    courses.value = []
   } finally {
     loading.value = false
   }
@@ -242,25 +371,126 @@ const handleCardClick = (type) => {
   }
 }
 
-const handleSearch = () => {
-  // 搜索逻辑已在 computed 中实现
+const handleSearch = async () => {
+  try {
+    loading.value = true
+    const params = new URLSearchParams()
+    if (filterParams.value.courseName) params.append('courseName', filterParams.value.courseName)
+    if (filterParams.value.baseYear) params.append('baseYear', filterParams.value.baseYear)
+    if (filterParams.value.targetYear) params.append('targetYear', filterParams.value.targetYear)
+    if (filterParams.value.semester) params.append('semester', filterParams.value.semester)
+    params.append('isRecurring', filterParams.value.isRecurring)
+    params.append('showAll', filterParams.value.showAll)
+    
+    const token = localStorage.getItem('authToken')
+    if (!token) {
+      throw new Error('请先登录')
+    }
+
+    const response = await fetch(`${apiBaseUrl}/api/teacher/courses`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || '搜索课程失败')
+    }
+
+    const data = await response.json()
+    if (data && Array.isArray(data)) {
+      courses.value = data
+      courseCount.value = courses.value.length
+      studentCount.value = courses.value.reduce((sum, course) => sum + (course.studentCount || 0), 0)
+    } else {
+      throw new Error('API返回数据格式不正确')
+    }
+  } catch (error) {
+    console.error('搜索课程失败:', error)
+    ElMessage.error(error.message || '搜索课程失败')
+  } finally {
+    loading.value = false
+  }
 }
 
-const handleAddCourse = () => {
-  console.log('添加课程功能待实现')
+const resetFilters = () => {
+  filterParams.value = {
+    courseName: '',
+    baseYear: '',
+    targetYear: '',
+    semester: '',
+    isRecurring: false,
+    showAll: false
+  }
+}
+
+const handleAddCourse = (course = null) => {
+  selectedCourse.value = course
+  if (course) {
+    // 编辑模式 - 填充表单
+    courseForm.value = {
+      courseCode: course.courseCode,
+      courseName: course.courseName,
+      academicYear: course.academicYear,
+      semester: course.semester,
+      description: course.description || ''
+    }
+  } else {
+    // 新建模式 - 重置表单
+    courseForm.value = {
+      courseCode: '',
+      courseName: '',
+      academicYear: '',
+      semester: 'spring',
+      description: ''
+    }
+  }
+  courseDialogVisible.value = true
 }
 
 const handleDeleteCourse = async (row) => {
   try {
-    await axios.delete(`/api/courses/${row.id}/`)
+    await ElMessageBox.confirm(
+      `确定要删除课程"${row.courseName}"吗? 此操作不可恢复。`,
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    await axios.delete(`/api/teacher/courses/${row.id}/`)
     await fetchCourses()
+    ElMessage.success('删除成功')
   } catch (error) {
-    console.error('删除课程失败:', error)
+    if (error !== 'cancel') {
+      console.error('删除课程失败:', error)
+      ElMessage.error('删除失败')
+    }
   }
 }
 
 const handleViewAttendance = (row) => {
   router.push({ name: 'CourseAttendance', params: { courseId: row.id } })
+}
+
+const handleSaveCourse = async () => {
+  try {
+    if (selectedCourse.value) {
+      // 编辑现有课程
+      await axios.put(`/api/teacher/courses/${selectedCourse.value.id}/`, courseForm.value)
+    } else {
+      // 创建新课程
+      await axios.post('/api/teacher/courses/', courseForm.value)
+    }
+    courseDialogVisible.value = false
+    await fetchCourses()
+  } catch (error) {
+    console.error('保存课程失败:', error)
+  }
 }
 
 const handleViewStudents = (row) => {

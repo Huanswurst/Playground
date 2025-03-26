@@ -24,7 +24,7 @@
             <el-icon><notebook /></el-icon>
             <span>课程管理</span>
           </template>
-          <el-menu-item index="2-1" route="/teacher/course/schedule">课程安排</el-menu-item>
+          <el-menu-item index="2-1" route="/teacher/courses">课程安排</el-menu-item>
           <el-menu-item index="2-2" route="/teacher/course/materials">教学资料</el-menu-item>
           <el-menu-item index="2-3" route="/teacher/course/assignments">作业管理</el-menu-item>
         </el-sub-menu>
