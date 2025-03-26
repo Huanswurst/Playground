@@ -64,8 +64,8 @@ class Student(models.Model):
             return f"{current_year}{new_seq:04d}"
 
 class Staff(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    employee_number = models.CharField(max_length=20, unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
+    employee_number = models.AutoField(primary_key=True)
     position = models.CharField(max_length=20, choices=[
         ('teacher', 'Teacher'),
         ('administrator', 'Administrator')

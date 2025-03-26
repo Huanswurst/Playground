@@ -541,9 +541,15 @@ class RegisterAPI(APIView):
                     print(f"创建学生记录失败：{str(e)}")
                     raise ValueError("无法生成学生学号") from e
             elif role == 'teacher':
-                Staff.objects.get_or_create(user=user)
+                Staff.objects.create(
+                    user=user,
+                    position='teacher'
+                )
             elif role == 'admin':
-                Staff.objects.get_or_create(user=user)
+                Staff.objects.create(
+                    user=user,
+                    position='administrator'
+                )
                 user.is_staff = True
                 user.is_superuser = True
                 user.save()

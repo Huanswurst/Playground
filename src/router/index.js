@@ -96,8 +96,9 @@ const routes = [
   
   // 教师路由
   { path: '/teacher/dashboard', component: TeacherDashboard },
+  { path: '/teacher/attendance', component: CourseAttendance },
+  { path: '/teacher/attendance/statistics', component: () => import('../views/teacher/AttendanceStatistics.vue') },
   { path: '/teacher/courses', component: ManageCourses },
-  { path: '/teacher/course-attendance', component: CourseAttendance },
   { path: '/teacher/group-photo', component: GroupPhotoCapture },
   {
     path: '/teacher/courses/:courseId/attendance',
