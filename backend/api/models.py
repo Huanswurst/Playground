@@ -41,7 +41,7 @@ class Student(models.Model):
     face_updated_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user.display_name or self.user.username} ({self.student_number})"
+        return f"{ self.user.username} ({self.student_number})"
 
     @classmethod
     def get_next_student_number(cls):
@@ -65,14 +65,14 @@ class Student(models.Model):
 
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
-    employee_number = models.AutoField(primary_key=True)
+    staff_id = models.AutoField(primary_key=True)
     position = models.CharField(max_length=20, choices=[
         ('teacher', 'Teacher'),
         ('administrator', 'Administrator')
     ])
 
     def __str__(self):
-        return f"{self.user.display_name or self.user.username} ({self.employee_number})"
+        return f"{self.user.username} ({self.staff_id})"
 
 class Course(models.Model):
     course_id = models.AutoField(primary_key=True)
@@ -85,12 +85,14 @@ class Course(models.Model):
         ('spring', 'Spring'),
         ('fall', 'Fall')
     ])
-    students = models.ManyToManyField(
-        'Student', 
+    # 课程主讲教师(直接关联Staff的teacher_id)
+    teacher = models.ForeignKey(
+        'Staff',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='courses',
-        through='CourseParticipant',
-        through_fields=('course', 'student'),
-        blank=True
+        db_column='teacher_id'
     )
 
     def __str__(self):
@@ -179,18 +181,20 @@ class ClassStudent(models.Model):
         return f"{self.student} in {self.class_instance}"
 
 class ClassTeacher(models.Model):
-    class_instance = models.ForeignKey(Class, on_delete=models.CASCADE)
-    teacher = models.ForeignKey(Staff, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(
+        Staff,
+        on_delete=models.CASCADE,
+        db_column='teacher_id'
+    )
     assigned_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('class_instance', 'teacher')
-        indexes = [
-            models.Index(fields=['class_instance', 'teacher'])
-        ]
+        verbose_name = 'Class Teacher'
+        verbose_name_plural = 'Class Teachers'
+        db_table = 'api_classteacher'
 
     def __str__(self):
-        return f"{self.teacher} teaches {self.class_instance}"
+        return f"{self.teacher}"
 
 class SystemLog(models.Model):
     LOG_LEVEL_CHOICES = [
@@ -217,3 +221,4 @@ class SystemLog(models.Model):
 
     def __str__(self):
         return f"[{self.level}] {self.message[:50]}"
+

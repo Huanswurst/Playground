@@ -60,6 +60,13 @@
               <p class="stat-description">本学期授课学生总数</p>
             </el-card>
           </el-col>
+          <el-col :span="isMobile ? 24 : 8">
+            <el-card class="stat-card" shadow="hover" @click.native="handleCardClick('attendance')">
+              <h3>平均考勤率</h3>
+              <p class="stat-value">{{ attendanceRate }}%</p>
+              <p class="stat-description">本学期课程平均考勤率</p>
+            </el-card>
+          </el-col>
         </el-row>
 
         <!-- 课程管理表格 -->
@@ -130,34 +137,22 @@
             style="width: 100%"
             :default-sort="{ prop: 'courseName', order: 'ascending' }"
             v-loading="loading"
+            @row-click="(row) => console.log('表格行数据:', row)"
           >
-            <el-table-column prop="courseCode" label="课程代码" width="120" sortable />
-            <el-table-column prop="courseName" label="课程名称" width="180" sortable>
+            <el-table-column prop="course_code" label="课程代码" width="120" sortable />
+            <el-table-column prop="course_name" label="课程名称" width="180" sortable>
               <template #default="{row}">
-                {{ row?.courseName || '-' }}
+                {{ row?.course_name || '-' }}
               </template>
             </el-table-column>
-            <el-table-column prop="academicYear" label="学年" width="100" sortable />
+            <el-table-column prop="academic_year" label="学年" width="100" sortable />
             <el-table-column prop="semester" label="学期" width="100" sortable />
-            <el-table-column label="授课教师" width="140" sortable>
-              <template #default="{row}">
-                <el-tag v-if="row.teacherName === userStore.user.name" type="success">{{ row.teacherName }}</el-tag>
-                <span v-else>{{ row.teacherName }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="学生人数" width="120" sortable>
-              <template #default="{row}">
-                <el-statistic :value="row.studentCount || 0">
-                  <template #suffix>人</template>
-                </el-statistic>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="280">
+            <el-table-column label="操作">
               <template #default="{ row }">
-                <el-button type="primary" @click="handleAddCourse(row)">编辑</el-button>
-                <el-button type="primary" @click="handleViewStudents(row)">管理学生</el-button>
-                <el-button type="primary" @click="handleViewAttendance(row)">查看考勤</el-button>
-                <el-button type="danger" @click="handleDeleteCourse(row)">删除</el-button>
+                <el-button type="primary" size="small" @click="handleAddCourse(row)">编辑</el-button>
+                <el-button type="primary" size="small" @click="handleViewStudents(row)">学生</el-button>
+                <el-button type="primary" size="small" @click="handleViewAttendance(row)">考勤</el-button>
+                <el-button type="danger" size="small" @click="handleDeleteCourse(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -244,6 +239,7 @@ const router = useRouter()
 const isMobile = ref(false)
 const courseCount = ref(0)
 const studentCount = ref(0)
+const attendanceRate = ref(0)
 const courses = ref([])
 const loading = ref(false)
 
@@ -271,53 +267,25 @@ const courseForm = ref({
 
 // 计算属性
 const filteredCourses = computed(() => {
-  return courses.value.filter((item) => {
-    try {
-      if (!item || typeof item !== 'object') return false
-      
-      // 课程名称过滤
-      const name = item.courseName || ''
-      const nameQuery = filterParams.value.courseName || ''
-      if (nameQuery && !name.toLowerCase().includes(nameQuery.toLowerCase())) {
-        return false
-      }
-
-      // 学年过滤
-      const year = item.academicYear || ''
-      const baseYear = filterParams.value.baseYear || ''
-      const targetYear = filterParams.value.targetYear || ''
-      if (baseYear && year !== baseYear) {
-        return false
-      }
-      if (targetYear && year !== targetYear) {
-        return false
-      }
-
-      // 学期过滤
-      const semester = item.semester || ''
-      const semesterQuery = filterParams.value.semester || ''
-      if (semesterQuery && semester !== semesterQuery) {
-        return false
-      }
-
-      // 重复课程过滤
-      const isRecurring = item.isRecurring || false
-      if (filterParams.value.isRecurring && !isRecurring) {
-        return false
-      }
-
-      // 显示历史课程过滤
-      const isCurrent = item.isCurrent || true
-      if (!filterParams.value.showAll && !isCurrent) {
-        return false
-      }
-
-      return true
-    } catch (error) {
-      console.error('过滤课程出错:', error)
+  console.log('原始课程数据:', courses.value)
+  console.log('过滤参数:', filterParams.value)
+  
+  // 简化过滤逻辑，先确保所有数据都能显示
+  const result = courses.value.filter(item => {
+    if (!item || typeof item !== 'object') return false
+    
+    // 仅保留课程名称过滤作为基本过滤条件
+    const name = item.courseName || ''
+    const nameQuery = filterParams.value.courseName || ''
+    if (nameQuery && !name.toLowerCase().includes(nameQuery.toLowerCase())) {
       return false
     }
+    
+    return true
   })
+  
+  console.log('过滤后的课程数据:', result)
+  return result
 })
 
 // 获取课程列表
@@ -337,9 +305,18 @@ const fetchCourses = async () => {
     
     console.log('API响应数据:', response.data)
     if (response.data && Array.isArray(response.data)) {
-      courses.value = response.data
+      // 确保数据包含所有必要字段
+      courses.value = response.data.map(item => ({
+        ...item,
+        studentCount: item.studentCount || 0,
+        teacherName: item.teacherName || '未知教师'
+      }))
+      console.log('处理后的课程数据:', courses.value)
       courseCount.value = courses.value.length
-      studentCount.value = courses.value.reduce((sum, course) => sum + (course.studentCount || 0), 0)
+      studentCount.value = courses.value.reduce((sum, course) => sum + course.studentCount, 0)
+      // 计算平均考勤率
+      const totalAttendance = courses.value.reduce((sum, course) => sum + (course.attendanceRate || 0), 0)
+      attendanceRate.value = courses.value.length > 0 ? Math.round(totalAttendance / courses.value.length) : 0
     } else {
       throw new Error('API返回数据格式不正确')
     }
@@ -428,26 +405,18 @@ const resetFilters = () => {
 }
 
 const handleAddCourse = (course = null) => {
+  // 明确设置selectedCourse状态
   selectedCourse.value = course
-  if (course) {
-    // 编辑模式 - 填充表单
-    courseForm.value = {
-      courseCode: course.courseCode,
-      courseName: course.courseName,
-      academicYear: course.academicYear,
-      semester: course.semester,
-      description: course.description || ''
-    }
-  } else {
-    // 新建模式 - 重置表单
-    courseForm.value = {
-      courseCode: '',
-      courseName: '',
-      academicYear: '',
-      semester: 'spring',
-      description: ''
-    }
+  
+  // 统一表单初始化逻辑
+  courseForm.value = {
+    courseCode: course?.courseCode || '',
+    courseName: course?.courseName || '',
+    academicYear: course?.academicYear || '',
+    semester: course?.semester || 'spring',
+    description: course?.description || ''
   }
+  
   courseDialogVisible.value = true
 }
 
@@ -479,17 +448,48 @@ const handleViewAttendance = (row) => {
 
 const handleSaveCourse = async () => {
   try {
-    if (selectedCourse.value) {
+    const token = localStorage.getItem('authToken')
+    if (!token) {
+      throw new Error('请先登录')
+    }
+
+    // 更严格的编辑模式判断
+    const isEditMode = selectedCourse.value !== null
+      && selectedCourse.value !== undefined
+      && selectedCourse.value.id
+      && typeof selectedCourse.value.id === 'number'
+    
+    if (isEditMode) {
       // 编辑现有课程
-      await axios.put(`/api/teacher/courses/${selectedCourse.value.id}/`, courseForm.value)
+      await axios.put(`${apiBaseUrl}/api/teacher/courses/${selectedCourse.value.id}/`, courseForm.value, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      ElMessage.success('课程更新成功')
     } else {
       // 创建新课程
-      await axios.post('/api/teacher/courses/', courseForm.value)
+      await axios.post(`${apiBaseUrl}/api/teacher/courses/`, courseForm.value, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      ElMessage.success('课程创建成功')
     }
+    
+    // 重置状态
     courseDialogVisible.value = false
+    selectedCourse.value = null
     await fetchCourses()
   } catch (error) {
     console.error('保存课程失败:', error)
+    if (error.response?.status === 401) {
+      localStorage.clear()
+      ElMessage.error('登录已过期，请重新登录')
+      await router.push('/login')
+    } else {
+      ElMessage.error(error.response?.data?.detail || error.message || '保存课程失败')
+    }
   }
 }
 
@@ -513,6 +513,25 @@ onBeforeUnmount(() => {
 <style scoped>
 /* 复用 Dashboard 的样式 */
 @import './Dashboard.css';
+
+/* 表格样式修复 */
+.el-table {
+  width: 100%;
+}
+.el-table__header-wrapper,
+.el-table__body-wrapper {
+  width: 100% !important;
+}
+.el-table__cell {
+  padding: 8px 0;
+}
+.el-table th.el-table__cell {
+  background-color: #f5f7fa;
+}
+.el-table .cell {
+  padding: 0 8px;
+  white-space: nowrap;
+}
 
 .attendance-sidebar {
   transition: width 0.3s ease;

@@ -132,6 +132,8 @@ class ClassStudentSerializer(serializers.ModelSerializer):
         fields = ['class_instance', 'student', 'enrolled_at']
 
 class ClassTeacherSerializer(serializers.ModelSerializer):
+    teacher_id = serializers.PrimaryKeyRelatedField(source='teacher', read_only=True)
+    
     class Meta:
         model = ClassTeacher
-        fields = ['class_instance', 'teacher', 'assigned_at']
+        fields = ['id', 'teacher_id', 'assigned_at']

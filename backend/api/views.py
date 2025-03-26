@@ -16,7 +16,8 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from .models import Student
+from datetime import datetime
+from .models import Student, Staff, ClassTeacher
 from .serializers import FaceMatchSerializer
 import numpy as np
 from rest_framework import status, viewsets
@@ -178,21 +179,31 @@ class StudentSelfieCaptureAPI(APIView):
         finally:
             os.unlink(temp_file_path)
 
-# 教师仪表盘API
 class TeacherDashboardAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        teacher = Staff.objects.get(user=request.user)
-        courses = Course.objects.filter(teacher=teacher)
-        attendance = AttendanceEvent.objects.filter(course__teacher=teacher)
-        
-        data = {
-            'total_courses': courses.count(),
-            'total_students': Student.objects.filter(courses__teacher=teacher).distinct().count(),
-            'total_attendance_events': attendance.count()
-        }
-        return Response(data)
+        try:
+            # 获取教师的ClassTeacher实例
+            class_teacher = ClassTeacher.objects.get(teacher__user=request.user)
+            # 查询该教师教授的课程
+            courses = Course.objects.filter(teacher=class_teacher)
+            attendance = AttendanceEvent.objects.filter(course__teacher=class_teacher)
+            
+            data = {
+                'total_courses': courses.count(),
+                'total_students': Student.objects.filter(
+                    courseparticipant__course__teacher=class_teacher,
+                    courseparticipant__role='student'
+                ).distinct().count(),
+                'total_attendance_events': attendance.count()
+            }
+            return Response(data)
+        except ClassTeacher.DoesNotExist:
+            return Response({
+                'error': '教师信息不存在'
+            }, status=status.HTTP_404_NOT_FOUND)
+
 
 # 集体照片捕获API
 class GroupPhotoCaptureAPI(APIView):
@@ -541,10 +552,8 @@ class RegisterAPI(APIView):
                     print(f"创建学生记录失败：{str(e)}")
                     raise ValueError("无法生成学生学号") from e
             elif role == 'teacher':
-                Staff.objects.create(
-                    user=user,
-                    position='teacher'
-                )
+                # 教师注册逻辑现在由数据库触发器处理
+                pass
             elif role == 'admin':
                 Staff.objects.create(
                     user=user,
@@ -642,25 +651,15 @@ class TeacherCourseViewSet(viewsets.ModelViewSet):
     renderer_classes = [JSONRenderer]
 
     def get_queryset(self):
-        queryset = self.queryset.filter(
-            courseparticipant__role='teacher'
-        ).distinct()
-        
-        # 优先使用teacher_id参数
-        teacher_id = self.request.query_params.get('teacher_id')
-        if teacher_id:
-            queryset = queryset.filter(
-                courseparticipant__staff__user_id=teacher_id
-            )
-        # 如果没有teacher_id参数，使用认证用户
-        elif hasattr(self.request.user, 'staff'):
-            queryset = queryset.filter(
-                courseparticipant__staff__user=self.request.user
-            )
-        else:
+        print(self.request.user)
+        try:
+            # 通过用户ID获取对应的Staff记录
+            staff = Staff.objects.get(user=self.request.user)
+            print(staff.staff_id)
+            # 直接使用staff对象查询该教师教授的课程
+            return self.queryset.filter(teacher=staff)
+        except Staff.DoesNotExist:
             return Course.objects.none()
-            
-        return queryset
 
 class TeacherAttendanceEventViewSet(viewsets.ModelViewSet):
     queryset = AttendanceEvent.objects.all()
